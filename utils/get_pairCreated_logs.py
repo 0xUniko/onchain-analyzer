@@ -30,9 +30,25 @@ def get_pairCreated_logs_by_timestamp(start, end):
                         topic1=wbnb_topic,
                         topic2=wbnb_topic)
 
+        new_logs = list(
+            map(
+                lambda x: {
+                    'address': x['address'],
+                    'topic0': x['topics'][0],
+                    'topic1': x['topics'][1],
+                    'topic2': x['topics'][2],
+                    'data': x['data'],
+                    'blockNumber': int(x['blockNumber'], 16),
+                    'timeStamp': int(x['timeStamp'], 16),
+                    'gasPrice': int(x['gasPrice'], 16),
+                    'logIndex': int(x['logIndex'], 16),
+                    'transactionHash': x['transactionHash'],
+                    'transactionIndex': int(x['transactionIndex'], 16)
+                }, new_logs))
+
         length = len(new_logs)
         if length > 0:
-            start_block_no = int(new_logs[-1]['blockNumber'], 16)
+            start_block_no = new_logs[-1]['blockNumber']
 
         logs.extend(new_logs)
 
@@ -56,7 +72,7 @@ def get_pairCreated_logs(date: datetime.date):
         logs = pd.read_csv(csv)
 
         update_logs = get_pairCreated_logs_by_timestamp(
-            int(logs.iloc[-1]['timeStamp'], 16) + 1, end_timestamp_of_date)
+            logs.iloc[-1]['timeStamp'] + 1, end_timestamp_of_date)
 
         if len(update_logs) > 0:
             logs = pd.concat([logs, pd.DataFrame(update_logs)])
