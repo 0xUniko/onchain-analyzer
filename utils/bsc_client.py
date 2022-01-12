@@ -17,16 +17,6 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
        wait=wait_random(min=1, max=1.5),
        reraise=True)
 def scan(module: str, action: str, **kwargs):
-    print('run')
     params = {'module': module, 'action': action, 'apiKey': api_key, **kwargs}
 
     return httpx.get(url=url, params=params).json()['result']
-
-
-# %%
-scan(
-    'aaccount',
-    'txlist',
-    address='0x702Bb112D78b454cCEa36cD8E26c0CDfAc8C469D',
-    startbock=13787501)
-# %%
