@@ -43,7 +43,7 @@ def get_pairCreated_logs_by_timestamp(start, end):
 
 # %%
 def get_pairCreated_logs(date: datetime.date):
-    csv = os.getcwd() + '/data/' + str(date) + '.csv'
+    csv = os.getcwd() + '/utils/pairCreated_logs/' + str(date) + '.csv'
 
     start_timestamp_of_date = int(
         time.mktime(time.strptime(str(date), '%Y-%m-%d')))
@@ -60,7 +60,7 @@ def get_pairCreated_logs(date: datetime.date):
 
         if len(update_logs) > 0:
             logs = pd.concat([logs, pd.DataFrame(update_logs)])
-            logs.to_csv(csv)
+            logs.to_csv(csv, index=False)
 
         return logs
     else:
@@ -68,6 +68,6 @@ def get_pairCreated_logs(date: datetime.date):
                                                  end_timestamp_of_date)
 
         logs = pd.DataFrame(logs)
-        logs.to_csv(csv)
+        logs.to_csv(csv, index=False)
 
         return logs
