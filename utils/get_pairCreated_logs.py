@@ -1,12 +1,12 @@
 #%%
-from utils.bsc_client import w3, scan
+from utils.bsc_client import w3, Scanner
 from utils.pancake_utils import pancake_factory_address, pairCreated_topic, wbnb_topic
 import datetime, os, time
 import pandas as pd
 
 
 # %%
-def get_pairCreated_logs_by_timestamp(start, end):
+def get_pairCreated_logs_by_timestamp(start, end, scan):
     start_block_no = int(
         scan('block', 'getblocknobytime', timestamp=start, closest='after'))
     end_block_no = int(
@@ -68,22 +68,25 @@ def get_pairCreated_logs(date: datetime.date):
             time.strptime(str(date + datetime.timedelta(days=1)),
                           '%Y-%m-%d'))) - 1
 
-    if os.path.exists(csv):
-        logs = pd.read_csv(csv)
+    with Scanner() as scanner:
+        if os.path.exists(csv):
+            logs = pd.read_csv(csv)
 
-        update_logs = get_pairCreated_logs_by_timestamp(
-            logs.iloc[-1]['timeStamp'] + 1, end_timestamp_of_date)
+            update_logs = get_pairCreated_logs_by_timestamp(
+                logs.iloc[-1]['timeStamp'] + 1, end_timestamp_of_date,
+                scanner.scan)
 
-        if len(update_logs) > 0:
-            logs = pd.concat([logs, pd.DataFrame(update_logs)])
+            if len(update_logs) > 0:
+                logs = pd.concat([logs, pd.DataFrame(update_logs)])
+                logs.to_csv(csv, index=False)
+
+            return logs
+        else:
+            logs = get_pairCreated_logs_by_timestamp(start_timestamp_of_date,
+                                                     end_timestamp_of_date,
+                                                     scanner.scan)
+
+            logs = pd.DataFrame(logs)
             logs.to_csv(csv, index=False)
 
-        return logs
-    else:
-        logs = get_pairCreated_logs_by_timestamp(start_timestamp_of_date,
-                                                 end_timestamp_of_date)
-
-        logs = pd.DataFrame(logs)
-        logs.to_csv(csv, index=False)
-
-        return logs
+            return logs
