@@ -40,6 +40,7 @@ async def get_txs(index, event, length, scanner, semaphore):
         print(index, '      ', e)
         return token, 'error'
     finally:
+        # The gap time here is not for 5 request. Is it for the 2 request in get_txs only? The gap time can be shorter.
         await asyncio.sleep(1.2)
 
 
