@@ -13,9 +13,6 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
 class Scanner():
-    def __init__(self):
-        self.client = httpx.Client()
-
     @retry(stop=stop_after_attempt(1),
            wait=wait_random(min=1, max=1.5),
            reraise=True)
@@ -29,9 +26,33 @@ class Scanner():
 
         return self.client.get(url=url, params=params).json()['result']
 
+    @retry(stop=stop_after_attempt(1),
+           wait=wait_random(min=1, max=1.5),
+           reraise=True)
+    async def scan_async(self, module: str, action: str, **kwargs):
+        params = {
+            'module': module,
+            'action': action,
+            'apiKey': api_key,
+            **kwargs
+        }
+
+        res = await self.client.get(url=url, params=params)
+
+        return res.json()['result']
+
     def __enter__(self):
+        self.client = httpx.Client()
+        return self
+
+    async def __aenter__(self):
+        self.client = httpx.AsyncClient()
         return self
 
     def __exit__(self, exc_type, exc_value, trace):
         self.client.close()
+        return False
+
+    async def __aexit__(self, exc_type, exc_value, trace):
+        await self.client.aclose()
         return False
