@@ -49,7 +49,7 @@ async def get_liquided_tokens(date: datetime.date):
 
         result = await asyncio.gather(*[
             get_txs(index, event, len(logs), scanner, asyncio.Semaphore(
-                value=5)) for index, event in logs.iterrows() if index < 200
+                value=5)) for index, event in logs.iterrows()
         ])
 
         tokens = list(filter(lambda x: x != None, result))
