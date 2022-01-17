@@ -1,4 +1,5 @@
 #%%
+from re import S
 from utils.bsc_client import Scanner
 from utils.pancake_utils import wbnb_topic, wbnb_addr
 from utils.get_pairCreated_logs import get_pairCreated_logs
@@ -48,9 +49,11 @@ async def get_liquided_tokens(date: datetime.date):
     async with Scanner() as scanner:
         logs = get_pairCreated_logs(date)
 
+        semaphore = asyncio.Semaphore(5)
+
         result = await asyncio.gather(*[
-            get_txs(index, event, len(logs), scanner, asyncio.Semaphore(
-                value=5)) for index, event in logs.iterrows()
+            get_txs(index, event, len(logs), scanner, semaphore)
+            for index, event in logs.iterrows()
         ])
 
         tokens = list(filter(lambda x: x != None, result))
