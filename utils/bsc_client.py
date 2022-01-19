@@ -31,6 +31,36 @@ class Scanner():
 
         return self.client.get(url=self.api, params=params).json()['result']
 
+    def token_txs(self, address=None, contractaddress=None):
+        startblock = 0
+        txs = []
+        flag = True
+        rd = 0
+
+        params = {}
+        if address != None:
+            params['address'] = address
+        if contractaddress != None:
+            params['contractaddress'] = contractaddress
+
+        while flag:
+            print('round:', rd)
+            new_txs = self.scan('account',
+                                'tokentx',
+                                startblock=startblock,
+                                **params)
+
+            txs_hash = [x['hash'] for x in txs]
+            txs.extend([tx for tx in new_txs if tx['hash'] not in txs_hash])
+
+            if len(new_txs) != 10000:
+                flag = False
+            else:
+                startblock = new_txs[-1]['blockNumber']
+                rd += 1
+
+        return txs
+
     @retry(stop=stop_after_attempt(1),
            wait=wait_random(min=1, max=1.5),
            reraise=True)
