@@ -47,11 +47,13 @@ class Scanner():
         return res.json()['result']
 
     def __enter__(self):
-        self.client = httpx.Client(proxies='http://127.0.0.1:10809')
+        self.client = httpx.Client(proxies='http://127.0.0.1:10809',
+                                   timeout=None)
         return self
 
     async def __aenter__(self):
-        self.client = httpx.AsyncClient(proxies='http://127.0.0.1:10809')
+        self.client = httpx.AsyncClient(proxies='http://127.0.0.1:10809',
+                                        timeout=None)
         return self
 
     def __exit__(self, exc_type, exc_value, trace):
