@@ -31,7 +31,7 @@ class Scanner():
 
         return self.client.get(url=self.api, params=params).json()['result']
 
-    def token_txs(self, address=None, contractaddress=None):
+    def bep20_txs(self, address=None, contractaddress=None):
         startblock = 0
         txs = []
         flag = True
