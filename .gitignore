@@ -1,3 +1,4 @@
 .env
 utils/__pycache__
 utils/storage
+dask-worker-space
