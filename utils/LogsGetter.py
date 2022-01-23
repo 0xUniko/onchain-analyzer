@@ -94,9 +94,11 @@ class LogsGetter():
             ])[-1][:10]
 
             if str(date) == last_log:
-                start_block = logs.iloc[-1]['blockNumber']
+                start_block, end_block = Scanner.get_start_end_block_of_date(
+                    date)
 
-                _, end_block = Scanner.get_start_end_block_of_date(date)
+                if not logs.empty:
+                    start_block = logs.iloc[-1]['blockNumber']
 
                 new_logs = self.get_logs_by_block_interval(
                     start_block, end_block, address, **topics_param)
