@@ -1,6 +1,6 @@
 # This is my endeavour to explore on chain transactions
 
-## Most useful parts of this repo is the util functions
+## Most useful parts of this repo are the util functions
 
 ## Chemmchar
 
