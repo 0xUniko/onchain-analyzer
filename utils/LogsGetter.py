@@ -1,5 +1,5 @@
 #%%
-from typing import List
+from typing import List, Tuple
 from utils.bsc_client import Scanner
 from utils.pancake_utils import pancake_factory_address, pairCreated_topic
 import datetime, os
@@ -76,29 +76,41 @@ class LogsGetter():
         return logs
 
     def get_logs(self, name: str, address: str, date: datetime.date,
-                 **topics_param):
-        if not os.path.exists(os.path.join('utils', name)):
-            os.makedirs(os.path.join('utils', name))
+                 **topics_param) -> pd.DataFrame:
+        dirname = os.path.join('utils', name)
+
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
 
         filename = os.path.join('utils', name, f'{str(date)}.csv')
 
         if os.path.exists(filename):
-            logs_cache = pd.read_csv(filename, index_col=0)
 
-            start_block = logs_cache.iloc[-1]['blockNumber']
+            logs = pd.read_csv(filename, index_col=0)
 
-            _, end_block = Scanner.get_start_end_block_of_date(date)
+            last_log = sorted([
+                f for f in os.listdir(dirname)
+                if len(f) == 14 and f[-3:] == 'csv'
+            ])[-1][:10]
 
-            logs = self.get_logs_by_block_interval(start_block, end_block,
-                                                   address, **topics_param)
+            if str(date) == last_log:
+                start_block = logs.iloc[-1]['blockNumber']
 
-            logs = [
-                log for log in logs if log['transactionHash'] not in
-                logs_cache['transactionHash'].values
-            ]
+                _, end_block = Scanner.get_start_end_block_of_date(date)
 
-            logs = pd.concat([logs_cache, pd.DataFrame(logs)],
-                             ignore_index=True)
+                new_logs = self.get_logs_by_block_interval(
+                    start_block, end_block, address, **topics_param)
+
+                new_logs = [
+                    log for log in new_logs if log['transactionHash'] not in
+                    logs['transactionHash'].values
+                ]
+
+                logs = pd.concat([logs, pd.DataFrame(new_logs)],
+                                 ignore_index=True)
+
+                if new_logs:
+                    logs.to_csv(filename)
         else:
             start_block, end_block = Scanner.get_start_end_block_of_date(date)
 
@@ -107,35 +119,40 @@ class LogsGetter():
 
             logs = pd.DataFrame(logs)
 
-        logs.to_csv(filename)
+            logs.to_csv(filename)
 
         return logs
+
+    def get_all_logs(self, name: str, address: str, start_date: datetime.date,
+                     **topics_param) -> pd.DataFrame:
+        date = start_date
+        today = datetime.date.today()
+        logs = []
+
+        while not date > today:
+            logs.append(self.get_logs(name, address, date, **topics_param))
+
+            date += datetime.timedelta(days=1)
+
+        return pd.concat(logs, ignore_index=True)
 
     def get_token_logs(
         self,
         token_name: str,
         token_addr: str,
-    ):
+    ) -> pd.DataFrame:
         start_timestamp_hex = self.scanner.scan(
             'logs', 'getLogs', address=token_addr)[0]['timeStamp']
 
         start_date = datetime.date.fromtimestamp(int(start_timestamp_hex, 16))
-        today = datetime.date.today()
 
-        logs = []
-
-        while not start_date > today:
-            logs.append(self.get_logs(token_name, token_addr, start_date))
-
-            start_date += datetime.timedelta(days=1)
-
-        return pd.concat(logs, ignore_index=True)
+        return self.get_all_logs(token_name, token_addr, start_date)
 
     def get_pair_logs(
         self,
         token_name: str,
         token_addrs: List[str],
-    ):
+    ) -> List[pd.DataFrame]:
         return [
             self.get_token_logs(
                 os.path.join(token_name, f'pair{i}'),
@@ -146,22 +163,11 @@ class LogsGetter():
     def get_pairCreated_logs(
         self,
         start_date: datetime.date = None,
-    ):
+    ) -> pd.DataFrame:
         start_date = datetime.date.today() - datetime.timedelta(
             days=30) if start_date == None else start_date
-        today = datetime.date.today()
 
-        logs = []
-
-        while not start_date > today:
-            logs.append(
-                self.get_logs(
-                    'pairCreated_logs',
-                    pancake_factory_address,
-                    start_date,
-                    topic0=pairCreated_topic,
-                ))
-
-            start_date += datetime.timedelta(days=1)
-
-        return pd.concat(logs, ignore_index=True)
+        return self.get_all_logs('pairCreated_logs',
+                                 pancake_factory_address,
+                                 start_date,
+                                 topic0=pairCreated_topic)
