@@ -30,7 +30,7 @@ lp_logs = scan('logs', 'getLogs', address=lp_addr)
 # %%
 len(lp_logs)
 # %%
-tx=w3.eth.get_transaction(token_tx_list[-5]['hash'])
+tx = w3.eth.get_transaction(token_tx_list[-5]['hash'])
 pancake_router_contract.decode_function_input(tx['input'])[0].abi['name']
 
 # %%
@@ -71,8 +71,7 @@ len(
     list(filter(lambda x: decode_pair_event(x['topics'][0]) == 'swap',
                 lp_logs)))
 # %%
-next(filter(lambda x: decode_pair_event(x['topics'][0]) == 'swap',
-                lp_logs))
+next(filter(lambda x: decode_pair_event(x['topics'][0]) == 'swap', lp_logs))
 
 # %%
 lp_logs[-5]
