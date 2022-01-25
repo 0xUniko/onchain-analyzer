@@ -1,5 +1,5 @@
 from .bsc_client import w3, Scanner
-# import json
+import json
 
 pancake_factory_address = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'
 pancake_router_address = '0x10ed43c718714eb63d5aa57b78b54704e256024e'
@@ -63,7 +63,7 @@ with Scanner(proxies='http://127.0.0.1:10809') as scanner:
                               address=pancake_router_address)
 pancake_router_contract = w3.eth.contract(
     address=w3.toChecksumAddress(pancake_router_address), abi=router_abi)
-# router_abi = json.loads(router_abi)
+router_abi = json.loads(router_abi)
 
 # from eth_utils import function_abi_to_4byte_selector
 # from eth_utils.hexadecimal import encode_hex
