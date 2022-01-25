@@ -1,6 +1,6 @@
-# from typing import Tuple
+from typing import Tuple
 # import httpx, datetime, time, os, json
-import httpx
+import httpx, datetime, time
 from dotenv import dotenv_values
 from web3 import Web3, HTTPProvider
 from web3.middleware import geth_poa_middleware
@@ -22,35 +22,35 @@ class Scanner():
         self.key = key
         self.proxies = proxies
 
-    # @retry(stop=stop_after_attempt(10),
-    #        wait=wait_random(min=1, max=1.5),
-    #        reraise=True)
-    # def get_start_end_block_of_date(date: datetime.date) -> Tuple[int, int]:
-    #     '''
-    #     The block starts after the date starts
-    #     '''
+    @retry(stop=stop_after_attempt(10),
+           wait=wait_random(min=1, max=1.5),
+           reraise=True)
+    def get_start_end_block_of_date(date: datetime.date) -> Tuple[int, int]:
+        '''
+        The block starts after the date starts
+        '''
 
-    #     start_timestamp_of_date = int(
-    #         time.mktime(time.strptime(str(date), '%Y-%m-%d')))
-    #     end_timestamp_of_date = int(
-    #         time.mktime(
-    #             time.strptime(str(date + datetime.timedelta(days=1)),
-    #                           '%Y-%m-%d'))) - 1
+        start_timestamp_of_date = int(
+            time.mktime(time.strptime(str(date), '%Y-%m-%d')))
+        end_timestamp_of_date = int(
+            time.mktime(
+                time.strptime(str(date + datetime.timedelta(days=1)),
+                              '%Y-%m-%d'))) - 1
 
-    #     with Scanner() as scanner:
-    #         start_block_no = int(
-    #             scanner.scan('block',
-    #                          'getblocknobytime',
-    #                          timestamp=start_timestamp_of_date,
-    #                          closest='after'))
-    #         end_block_no = int(
-    #             scanner.scan('block',
-    #                          'getblocknobytime',
-    #                          timestamp=end_timestamp_of_date,
-    #                          closest='before')
-    #         ) if end_timestamp_of_date < time.time() else w3.eth.block_number
+        with Scanner() as scanner:
+            start_block_no = int(
+                scanner.scan('block',
+                             'getblocknobytime',
+                             timestamp=start_timestamp_of_date,
+                             closest='after'))
+            end_block_no = int(
+                scanner.scan('block',
+                             'getblocknobytime',
+                             timestamp=end_timestamp_of_date,
+                             closest='before')
+            ) if end_timestamp_of_date < time.time() else w3.eth.block_number
 
-    #     return start_block_no, end_block_no
+        return start_block_no, end_block_no
 
     @retry(stop=stop_after_attempt(1),
            wait=wait_random(min=1, max=1.5),
