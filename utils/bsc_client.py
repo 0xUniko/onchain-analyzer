@@ -1,11 +1,10 @@
 from typing import Tuple
-# import httpx, datetime, time, os, json
-import httpx, datetime, time
+import httpx, datetime, time, os, json
 from dotenv import dotenv_values
 from web3 import Web3, HTTPProvider
 from web3.middleware import geth_poa_middleware
 from tenacity import retry, wait_random, stop_after_attempt
-# import pandas as pd
+import pandas as pd
 
 api_key = dotenv_values()['BSCSCAN_API_KEY']
 api = 'https://api.bscscan.com/api'
@@ -95,61 +94,82 @@ class Scanner():
 
         return txs
 
-    # def all_txs(self,
-    #             date: datetime.date,
-    #             name='pcs_router_txs',
-    #             address='0x10ed43c718714eb63d5aa57b78b54704e256024e'):
-    #     '''
-    #     get all transactions of a date
-    #     '''
-    #     if not os.path.exists('utils/storage/' + name):
-    #         os.mkdir('utils/storage/' + name)
+    def all_txs(self,
+                date: datetime.date,
+                name='pcs_router_txs',
+                address='0x10ed43c718714eb63d5aa57b78b54704e256024e'):
+        '''
+        get all transactions of a date
+        '''
+        dirname = os.path.join('utils', 'storage', name)
 
-    #     cache_txs = f'utils/storage/{name}/{str(date)}.feather'
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
 
-    #     if os.path.exists(cache_txs):
-    #         txs = pd.read_feather(cache_txs)
-    #     else:
-    #         startblock, endblock = Scanner.get_start_end_block_of_date(date)
-    #         endblock += 1
-    #         print('startblock:', startblock, 'endblock:', endblock)
+        cache_txs = os.path.join(dirname, f'{str(date)}.feather')
 
-    #         listdir = os.listdir(f'utils/storage/{name}/tmp')
-    #         txs = []
-    #         flag = True
+        startblock, endblock = Scanner.get_start_end_block_of_date(date)
 
-    #         while flag:
-    #             print('startblock:', startblock)
+        if os.path.exists(cache_txs):
+            txs = pd.read_feather(cache_txs)
 
-    #             tmp = str(startblock) + '.json'
-    #             if tmp in listdir:
-    #                 with open(f'utils/storage/{name}/tmp/{tmp}', 'r') as f:
-    #                     new_txs = json.load(f)
-    #             else:
-    #                 new_txs = self.scan('account',
-    #                                     'txlist',
-    #                                     address=address,
-    #                                     startblock=startblock,
-    #                                     endblock=endblock)
+            last_tx = sorted([
+                f for f in os.listdir(dirname)
+                if len(f) == 14 and f[-3:] == 'csv'
+            ])[-1][:10]
 
-    #                 with open(f'utils/storage/{name}/tmp/{tmp}', 'w') as f:
-    #                     json.dump(new_txs, f)
+            if str(date) == last_tx:
+                if not txs.empty:
+                    startblock = txs.iloc[-1]['blockNumber']
+            else:
+                return txs
+        else:
+            txs = None
 
-    #             txs.extend([
-    #                 tx for tx in new_txs
-    #                 if tx['blockNumber'] != new_txs[-1]['blockNumber']
-    #                 and tx['isError'] != '1'
-    #             ])
+        endblock += 1
+        print('startblock:', startblock, 'endblock:', endblock)
 
-    #             if len(new_txs) != 10000:
-    #                 flag = False
-    #             else:
-    #                 startblock = new_txs[-1]['blockNumber']
+        listdir = os.listdir(os.path.join(dirname, 'tmp'))
+        new_txs_collector = []
+        flag = True
 
-    #         txs = pd.DataFrame(txs)
-    #         txs.to_feather(cache_txs)
+        while flag:
+            print('startblock:', startblock)
 
-    #     return txs
+            tmp = str(startblock) + '.json'
+            if tmp in listdir:
+                with open(f'utils/storage/{name}/tmp/{tmp}', 'r') as f:
+                    new_txs = json.load(f)
+            else:
+                new_txs = self.scan('account',
+                                    'txlist',
+                                    address=address,
+                                    startblock=startblock,
+                                    endblock=endblock)
+
+                with open(f'utils/storage/{name}/tmp/{tmp}', 'w') as f:
+                    json.dump(new_txs, f)
+
+            new_txs_collector = [
+                tx for tx in new_txs_collector
+                if tx['blockNumber'] != startblock
+            ]
+
+            new_txs_collector.extend(
+                [tx for tx in new_txs if tx['isError'] != '1'])
+
+            if len(new_txs) != 10000:
+                flag = False
+            else:
+                startblock = new_txs[-1]['blockNumber']
+
+        txs = pd.concat([txs, pd.DataFrame(new_txs_collector)
+                         ]) if txs else pd.DataFrame(new_txs_collector)
+        if new_txs_collector:
+            txs.to_feather(cache_txs)
+
+        txs.set_index('hash')
+        return txs
 
     @retry(stop=stop_after_attempt(1),
            wait=wait_random(min=1, max=1.5),
