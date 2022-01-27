@@ -5,6 +5,7 @@ pancake_factory_address = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'
 pancake_router_address = '0x10ed43c718714eb63d5aa57b78b54704e256024e'
 wbnb_addr = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
 busd_addr = '0xe9e7cea3dedca5984780bafc599bd69add087d56'
+bsc_usd_addr = '0x55d398326f99059fF775485246999027B3197955'
 dai_addr = '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3'
 
 wbnb_topic = '0x000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c'
