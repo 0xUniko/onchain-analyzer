@@ -103,10 +103,11 @@ class LogsGetter():
                 new_logs = self.get_logs_by_block_interval(
                     start_block, end_block, address, **topics_param)
 
-                new_logs = [
-                    log for log in new_logs if log['transactionHash'] not in
-                    logs['transactionHash'].values
-                ]
+                if not logs.empty:
+                    new_logs = [
+                        log for log in new_logs if log['transactionHash']
+                        not in logs['transactionHash'].values
+                    ]
 
                 logs = pd.concat([logs, pd.DataFrame(new_logs)],
                                  ignore_index=True)
