@@ -23,6 +23,8 @@ swap_topic = w3.keccak(
 sync_topic = w3.keccak(text='Sync(uint112,uint112)').hex()
 approval_topic = w3.keccak(text='Approval(address,address,uint256)').hex()
 transfer_topic = w3.keccak(text='Transfer(address,address,uint256)').hex()
+deposit_topic = w3.keccak(text='Deposit(address,uint256)').hex()
+withdrawal_topic = w3.keccak(text='Withdrawal(address,uint256)').hex()
 
 
 def hex_to_topic_name(topic: str):
@@ -38,6 +40,10 @@ def hex_to_topic_name(topic: str):
         return 'approve'
     if topic == transfer_topic:
         return 'transfer'
+    if topic == deposit_topic:
+        return 'deposit'
+    if topic == withdrawal_topic:
+        return 'withdrawal'
 
 
 def decode_transfer_event(topics, data):
