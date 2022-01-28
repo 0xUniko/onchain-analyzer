@@ -122,6 +122,7 @@ class Scanner():
                 if not txs.empty:
                     startblock = txs.iloc[-1]['blockNumber']
             else:
+                txs.set_index('hash', inplace=True)
                 return txs
         else:
             txs = None
@@ -168,7 +169,7 @@ class Scanner():
         if new_txs_collector:
             txs.to_feather(cache_txs)
 
-        txs.set_index('hash')
+        txs.set_index('hash', inplace=True)
         return txs
 
     @retry(stop=stop_after_attempt(1),
