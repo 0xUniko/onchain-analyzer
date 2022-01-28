@@ -111,7 +111,7 @@ class Scanner():
         startblock, endblock = Scanner.get_start_end_block_of_date(date)
 
         if os.path.exists(cache_txs):
-            txs = pd.read_feather(cache_txs)
+            txs: pd.DataFrame = pd.read_feather(cache_txs)
 
             last_tx = sorted([
                 f for f in os.listdir(dirname)
