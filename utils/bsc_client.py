@@ -139,7 +139,7 @@ class Scanner():
 
             tmp = str(startblock) + '.json'
             if tmp in listdir:
-                with open(f'utils/storage/{name}/tmp/{tmp}', 'r') as f:
+                with open(os.path.join(dirname, 'tmp', tmp), 'r') as f:
                     new_txs = json.load(f)
             else:
                 new_txs = self.scan('account',
@@ -148,7 +148,7 @@ class Scanner():
                                     startblock=startblock,
                                     endblock=endblock)
 
-                with open(f'utils/storage/{name}/tmp/{tmp}', 'w') as f:
+                with open(os.path.join(dirname, 'tmp', tmp), 'w') as f:
                     json.dump(new_txs, f)
 
             new_txs_collector = [
