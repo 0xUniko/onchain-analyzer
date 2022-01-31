@@ -78,7 +78,7 @@ class TxsGetter():
                 return txs
         else:
             startblock, endblock = Scanner.get_start_end_block_of_date(date)
-            txs = None
+            txs = pd.DataFrame()
 
         print('startblock:', startblock, 'endblock:', endblock)
 
@@ -116,8 +116,8 @@ class TxsGetter():
             else:
                 startblock = new_txs[-1]['blockNumber']
 
-        txs = pd.concat([txs, pd.DataFrame(new_txs_collector)
-                         ]) if txs else pd.DataFrame(new_txs_collector)
+        txs = pd.concat([txs, pd.DataFrame(new_txs_collector)],
+                        ignore_index=True)
         if new_txs_collector:
             txs.to_feather(cache_txs)
 
