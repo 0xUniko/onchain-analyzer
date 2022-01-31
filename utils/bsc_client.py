@@ -181,7 +181,7 @@ class Scanner():
             txs_date = self.all_txs(date=date)
 
             txs.append(txs_date.loc[[
-                hash for hash in hash if hash in txs_date.index
+                hash for hash in hashs if hash in txs_date.index
             ]])
 
             date += datetime.timedelta(days=1)
