@@ -172,6 +172,23 @@ class Scanner():
         txs.set_index('hash', inplace=True)
         return txs
 
+    def get_txs_by_hashs(self,
+                         hashs: List[str],
+                         date: datetime.date = datetime.date(2021, 12, 24)):
+        today = datetime.date.today()
+        txs = []
+
+        while not date > today:
+            txs_date = self.all_txs(date=date)
+
+            txs.append(txs_date.loc[[
+                hash for hash in hash if hash in txs_date.index
+            ]])
+
+            date += datetime.timedelta(days=1)
+
+        return pd.concat(txs)
+
     @retry(stop=stop_after_attempt(1),
            wait=wait_random(min=1, max=1.5),
            reraise=True)
