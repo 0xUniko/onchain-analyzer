@@ -108,8 +108,6 @@ class Scanner():
 
         cache_txs = os.path.join(dirname, f'{str(date)}.feather')
 
-        startblock, endblock = Scanner.get_start_end_block_of_date(date)
-
         if os.path.exists(cache_txs):
             txs: pd.DataFrame = pd.read_feather(cache_txs)
 
@@ -120,11 +118,13 @@ class Scanner():
 
             if str(date) == last_tx:
                 if not txs.empty:
+                    _, endblock = Scanner.get_start_end_block_of_date(date)
                     startblock = txs.iloc[-1]['blockNumber']
             else:
                 txs.set_index('hash', inplace=True)
                 return txs
         else:
+            startblock, endblock = Scanner.get_start_end_block_of_date(date)
             txs = None
 
         endblock += 1
