@@ -127,7 +127,6 @@ class Scanner():
             startblock, endblock = Scanner.get_start_end_block_of_date(date)
             txs = None
 
-        endblock += 1
         print('startblock:', startblock, 'endblock:', endblock)
 
         listdir = os.listdir(os.path.join(dirname, 'tmp'))
