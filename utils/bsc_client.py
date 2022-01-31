@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 import httpx, datetime, time, os, json
 from dotenv import dotenv_values
 from web3 import Web3, HTTPProvider
@@ -115,7 +115,7 @@ class Scanner():
 
             last_tx = sorted([
                 f for f in os.listdir(dirname)
-                if len(f) == 14 and f[-3:] == 'csv'
+                if len(f) == 18 and f[-7:] == 'feather'
             ])[-1][:10]
 
             if str(date) == last_tx:
