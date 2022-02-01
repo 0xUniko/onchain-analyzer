@@ -124,20 +124,21 @@ class TxsGetter():
         txs.set_index('hash', inplace=True)
         return txs
 
-    def get_txs_by_hashs(self,
-                         hashs: List[str],
-                         date: datetime.date = datetime.date(2021, 12, 24)):
-        today = datetime.date.today()
+    def get_txs_by_hashs(self, hashs: List[str], start_date: datetime.date,
+                         end_date: datetime.date.today()):
+        hashs = set(hashs)
         txs = []
 
-        while not date > today:
-            txs_date = self.all_txs(date=date)
+        while start_date <= end_date:
+            print('start_date:', start_date)
+
+            txs_date = self.all_txs(date=start_date)
 
             txs.append(txs_date.loc[[
                 hash for hash in hashs if hash in txs_date.index
             ]])
 
-            date += datetime.timedelta(days=1)
+            start_date += datetime.timedelta(days=1)
 
         return pd.concat(txs)
 
@@ -176,3 +177,20 @@ class TxsGetter():
             start_date += datetime.timedelta(days=1)
 
         return pd.concat(txs)
+
+    def get_txs_by_token_logs_and_pairs_logs(
+        self,
+        token_logs: pd.DataFrame,
+        pair_logs: List[pd.DataFrame],
+        start_date: datetime.date,
+        end_date: datetime.date = datetime.date.today()):
+        hashs = []
+
+        hashs.extend(token_logs['transactionHash'])
+
+        for log in pair_logs:
+            hashs.extend(log['transactionHash'])
+
+        return self.get_txs_by_hashs(hashs=hashs,
+                                     start_date=start_date,
+                                     end_date=end_date)
