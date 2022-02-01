@@ -1,9 +1,9 @@
 #%%
 from typing import List
 from utils.bsc_client import Scanner
+from utils.pancake_utils import router_input_decoder
 import datetime, os, json
 import pandas as pd
-from tenacity import retry, wait_random, stop_after_attempt
 
 
 class TxsGetter():
@@ -138,5 +138,41 @@ class TxsGetter():
             ]])
 
             date += datetime.timedelta(days=1)
+
+        return pd.concat(txs)
+
+    def get_router_swap_txs_by_token(
+        self,
+        token: str,
+        start_date: datetime.date,
+        end_date: datetime.date = datetime.date.today()):
+        token = token.lower()
+        txs = []
+
+        def find_mvs_txs_in_router_txs(tx_input):
+            if 'swap' in tx_input[0]:
+                return token in tx_input[1]['path']
+
+            if 'Liquidity' in tx_input[0]:
+                if 'ETH' in tx_input[0]:
+                    return tx_input[1]['token'] == token
+                else:
+                    return tx_input[1]['tokenA'] == token or tx_input[1][
+                        'tokenB'] == token
+
+            return False
+
+        while not start_date > end_date:
+            print('start_date:', start_date)
+
+            router_txs = self.all_txs(start_date)
+
+            router_txs['input'] = router_txs['input'].map(
+                router_input_decoder.decode)
+
+            txs.append(router_txs.loc[router_txs['input'].map(
+                find_mvs_txs_in_router_txs)])
+
+            start_date += datetime.timedelta(days=1)
 
         return pd.concat(txs)
