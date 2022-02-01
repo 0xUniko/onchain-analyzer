@@ -2,7 +2,7 @@
 from typing import List
 from utils.bsc_client import Scanner
 from utils.pancake_utils import router_input_decoder
-import datetime, os, json
+import datetime, os, json, warnings
 import pandas as pd
 
 
@@ -99,19 +99,22 @@ class TxsGetter():
                                             address=address,
                                             startblock=startblock,
                                             endblock=endblock)
-
-                with open(os.path.join(dirname, 'tmp', tmp), 'w') as f:
-                    json.dump(new_txs, f)
+                if not new_txs:
+                    warnings.warn(f'startblock {startblock} is empty!')
+                else:
+                    with open(os.path.join(dirname, 'tmp', tmp), 'w') as f:
+                        json.dump(new_txs, f)
 
             new_txs_collector = [
                 tx for tx in new_txs_collector
                 if tx['blockNumber'] != startblock
             ]
 
-            new_txs_collector.extend(
-                [tx for tx in new_txs if tx['isError'] != '1'])
+            if new_txs:
+                new_txs_collector.extend(
+                    [tx for tx in new_txs if tx['isError'] != '1'])
 
-            if len(new_txs) != 10000:
+            if new_txs == None or len(new_txs) != 10000:
                 flag = False
             else:
                 startblock = new_txs[-1]['blockNumber']
