@@ -177,6 +177,26 @@ class TxsGetter():
 
         return pd.concat(txs)
 
+    def get_txs_by_token_logs_and_pairs_logs(
+        self,
+        token_logs: pd.DataFrame,
+        pair_logs: List[pd.DataFrame],
+        start_date: datetime.date,
+        end_date: datetime.date = datetime.date.today()):
+        '''
+        Deprecated. Use get_txs_and_external_accounts_holders
+        '''
+        hashs = []
+
+        hashs.extend(token_logs['transactionHash'])
+
+        for log in pair_logs:
+            hashs.extend(log['transactionHash'])
+
+        return self.get_txs_by_hashs(hashs=hashs,
+                                     start_date=start_date,
+                                     end_date=end_date)
+
     def get_router_swap_txs_by_token(
         self,
         token: str,
@@ -212,20 +232,3 @@ class TxsGetter():
             start_date += datetime.timedelta(days=1)
 
         return pd.concat(txs)
-
-    def get_txs_by_token_logs_and_pairs_logs(
-        self,
-        token_logs: pd.DataFrame,
-        pair_logs: List[pd.DataFrame],
-        start_date: datetime.date,
-        end_date: datetime.date = datetime.date.today()):
-        hashs = []
-
-        hashs.extend(token_logs['transactionHash'])
-
-        for log in pair_logs:
-            hashs.extend(log['transactionHash'])
-
-        return self.get_txs_by_hashs(hashs=hashs,
-                                     start_date=start_date,
-                                     end_date=end_date)
