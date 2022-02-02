@@ -197,11 +197,15 @@ class TxsGetter():
                                      start_date=start_date,
                                      end_date=end_date)
 
-    def get_router_swap_txs_by_token(
+    def get_router_txs_by_token(
         self,
         token: str,
         start_date: datetime.date,
         end_date: datetime.date = datetime.date.today()):
+        '''
+        This function selects the token transactions by transaction input. It is slower than get_txs_and_external_accounts_holders. 
+        This function can be used i verification. 
+        '''
         token = token.lower()
         txs = []
 
