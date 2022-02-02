@@ -73,36 +73,40 @@ pancake_router_contract = w3.eth.contract(
     address=w3.toChecksumAddress(pancake_router_address), abi=router_abi)
 router_abi = json.loads(router_abi)
 
-from eth_utils import function_abi_to_4byte_selector
-from eth_utils.hexadecimal import encode_hex
-from web3._utils.encoding import to_4byte_hex
-from web3._utils.abi import get_abi_input_names, get_abi_input_types, map_abi_data
-from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
-from web3 import Web3
+# %%
+from eth_abi.abi import decode_abi
+from eth_utils.abi import function_abi_to_4byte_selector
 
-from typing import cast
-from hexbytes import HexBytes
+from web3_input_decoder.exceptions import InputDataError
+from web3_input_decoder.utils import (
+    get_types_names,
+    hex_to_bytes,
+)
 
 
-def decode_function_input(abi, data):
-    '''
-    This function is used to bypass a bug in Modin when using Contract.decode_function_input of web3py
-    '''
-    data = HexBytes(data)  # type: ignore
-    selector, params = data[:4], data[4:]
+# the path should be array not tuple
+class InputDecoder():
+    def __init__(self, abi):
+        self.selector_to_type_def = {}
 
-    def callable_check(fn_abi) -> bool:
-        return encode_hex(
-            function_abi_to_4byte_selector(fn_abi)) == to_4byte_hex(selector)
+        for type_def in abi:
+            if type_def["type"] == "function":
+                selector = function_abi_to_4byte_selector(type_def)
+                self.selector_to_type_def[selector] = type_def
 
-    fns_abi = [x for x in abi if x['type'] == 'function']
+    def decode(self, tx_input):
+        tx_input = hex_to_bytes(tx_input)
+        selector, args = tx_input[:4], tx_input[4:]
+        if selector not in self.selector_to_type_def:
+            raise InputDataError("Specified method not found in ABI")
 
-    func_abi = [fn_abi for fn_abi in fns_abi if callable_check(fn_abi)][0]
+        # type_def = selector_to_type_def[selector]["inputs"]
+        func_abi = self.selector_to_type_def[selector]
+        types, names = get_types_names(func_abi['inputs'])
 
-    names = get_abi_input_names(func_abi)
-    types = get_abi_input_types(func_abi)
+        values = decode_abi(types, args)
+        # return [(t, n, v) for t, n, v in zip(types, names, values)]
+        return func_abi['name'], dict(zip(names, values))
 
-    decoded = Web3().codec.decode_abi(types, cast(HexBytes, params))
-    normalized = map_abi_data(BASE_RETURN_NORMALIZERS, types, decoded)
 
-    return func_abi['name'], dict(zip(names, normalized))
+router_input_decoder = InputDecoder(router_abi)
