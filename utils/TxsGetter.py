@@ -127,6 +127,38 @@ class TxsGetter():
         txs.set_index('hash', inplace=True)
         return txs
 
+    def get_txs_and_external_accounts_holders(
+        self,
+        token_logs: pd.DataFrame,
+        pair_logs: List[pd.DataFrame],
+        holders: pd.Series,
+        start_date: datetime.date,
+        end_date: datetime.date = datetime.date.today()):
+        hashs = []
+        contract_holders = set(holders)
+
+        hashs.extend(token_logs['transactionHash'])
+
+        for log in pair_logs:
+            hashs.extend(log['transactionHash'])
+
+        hashs = set(hashs)
+        txs = []
+
+        while start_date <= end_date:
+            print('start_date:', start_date)
+
+            txs_date = self.all_txs(date=start_date)
+
+            txs.append(txs_date.loc[list(
+                set(txs_date.index).intersection(hashs))])
+
+            contract_holders = contract_holders - set(txs_date['from'])
+
+            start_date += datetime.timedelta(days=1)
+
+        return set(holders) - contract_holders, pd.concat(txs)
+
     def get_txs_by_hashs(self, hashs: List[str], start_date: datetime.date,
                          end_date: datetime.date.today()):
         hashs = set(hashs)
