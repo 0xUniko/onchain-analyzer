@@ -4,7 +4,7 @@ import pandas as pd
 
 from utils.bsc_client import Scanner, w3
 from utils.TxsGetter import TxsGetter
-from utils.pancake_utils import pancake_router_contract, wbnb_addr, pancake_router_topic, pancake_router_address, router_abi, router_input_decoder
+from utils.pancake_utils import pancake_router_contract, wbnb_addr, busd_addr, bsc_usd_addr, dai_addr, doge_addr, pancake_router_topic, pancake_router_address, router_abi, router_input_decoder
 from utils.LogsGetter import LogsGetter
 from utils.pancake_utils import mint_topic, burn_topic, swap_topic, sync_topic, approval_topic, transfer_topic, hex_to_topic_name, decode_balance
 
@@ -133,14 +133,16 @@ with LogsGetter() as logs_getter:
     mvs_logs = logs_getter.get_token_logs('multiverse', mvs)
     pair_logs = logs_getter.get_pair_logs('multiverse', pair_addrs)
 # %%
-hashs = []
-hashs.extend(mvs_logs['transactionHash'])
-for log in pair_logs:
-    hashs.extend(log['transactionHash'])
-hashs = set(hashs)
-print(len(hashs))
-# %%
-txs
+pair_logs_dict = {}
+pair_tokens = [
+    busd_addr.lower(),
+    bsc_usd_addr.lower(), '0xba2ae424d960c26247dd6c32edc70b295c744c43'.lower(),
+    wbnb_addr.lower()
+]
+pair_logs_dict2 = {}
+for i, hash in enumerate(pair_addrs):
+    pair_logs_dict[hash] = pair_logs[i]
+    pair_logs_dict2[pair_tokens[i]] = pair_logs[i]
 # %%
 with TxsGetter() as txs_getter:
     router_txs = txs_getter.all_txs(datetime.date(2021, 12, 30))
@@ -171,24 +173,140 @@ with TxsGetter() as txs_getter:
 addr_topic = transfer_cnt.loc[transfer_cnt > 5 & transfer_cnt.index.to_series(
 ).isin(historical_holders)].index.to_series().sample(1).iloc[0]
 
+addr = '0x' + addr_topic[26:66]
+# %%
+addr = '0x22168bd61e83228471098645aad1beb1269221d6'
+addr_topic = '0x' + '0' * 24 + addr[2:]
 # %%
 print(len(historical_holders))
 print(addr_topic)
-print(addr_topic[26:66])
+print(addr)
 # %%
 mvs_approve_logs.loc[mvs_approve_logs['topic1'] == addr_topic,
                      'topic2'].value_counts()
 # %%
+# only useful thing in approval should be the spender
 mvs_approve_logs.loc[mvs_approve_logs['topic1'] == addr_topic,
-                     ['transactionHash', 'data']].iloc[1, 0]
-'0x' + addr_topic[26:66]
+                     'transactionHash'].iloc[0]
 # %%
-mvs_txs.loc[mvs_txs['from'] == '0x' + addr_topic[26:66]]
-# %%
-addr_txs_logs = mvs_transfer_logs.loc[
+# approve_logs is empty, trace the transfer_logs
+addr_transfer_logs = mvs_transfer_logs.loc[
     (mvs_transfer_logs['topic1'] == addr_topic) |
     (mvs_transfer_logs['topic2'] == addr_topic), ]
 # %%
-print(len(addr_txs_logs))
+addr_transfer_logs
+# %%
+len(addr_transfer_logs)
 
 # %%
+addr_txs = mvs_txs.loc[mvs_txs['from'] == addr]
+# %%
+addr_txs
+# %%
+len(addr_txs)
+
+# %%
+# useless
+addr_pair_logs = pd.concat([
+    logs.loc[(logs['topic1'] == addr_topic) | (logs['topic2'] == addr_topic)]
+    for logs in pair_logs
+])
+
+# %%
+set(addr_txs.index).issubset(set(addr_transfer_logs['transactionHash']))
+# %%
+addr_approve_logs = mvs_approve_logs.loc[mvs_approve_logs['topic1'] ==
+                                         addr_topic, 'topic2']
+if addr_approve_logs.empty:
+    pass
+elif addr_approve_logs.iloc[
+        0] == pancake_router_topic and addr_approve_logs.nunique() == 1:
+    addr_transfer_logs = mvs_transfer_logs.loc[
+        (mvs_transfer_logs['topic1'] == addr_topic) |
+        (mvs_transfer_logs['topic2'] == addr_topic), ]
+
+    addr_txs = mvs_txs.loc[mvs_txs['from'] == addr]
+
+    if len(addr_txs) == len(addr_transfer_logs):
+        pass
+else:
+    pass
+# %%
+addr_txs['input'].map(lambda x: router_input_decoder.decode(x)[0])
+
+# %%
+balance = {
+    'account': addr,
+    mvs: 0,
+    'mvs_transfer_in': 0,
+    busd_addr.lower(): 0,
+    bsc_usd_addr.lower(): 0,
+    '0xba2ae424d960c26247dd6c32edc70b295c744c43': 0,
+    wbnb_addr.lower(): 0
+}
+# %%
+if addr_txs.index.to_series().isin(
+        addr_transfer_logs['transactionHash']).all():
+    for _, log in addr_transfer_logs.iterrows():
+        if log['transactionHash'] in addr_txs.index:
+            tx = addr_txs.loc[log['transactionHash']]
+
+            method_name, input_data = router_input_decoder.decode(tx['input'])
+
+            path = input_data['path']
+
+            if path[-1] == mvs.lower():
+                pair_token = path[-2]
+            elif path[0] == mvs.lower():
+                pair_token = path[1]
+            else:
+                print('Warning: pair not match!!!')
+                break
+
+            pair_log = pair_logs_dict2[pair_token]
+
+            swap_data = pair_log.loc[(pair_log['transactionHash'] == tx.name)
+                                     & (pair_log['topic0'] == swap_topic),
+                                     'data'].values
+
+            # TODO: this conditions should be ensured
+            if input_data['to'] != addr:
+                print("Warning! the receiver of the swap is someone else!")
+            if len(swap_data) != 1:
+                print('Warning! ')
+
+            amount0In, amount1In, amount0Out, amount1Out = (int(
+                swap_data[0][2 + 64 * i:2 + 64 * (i + 1)], 16)
+                                                            for i in range(4))
+
+            # print(amount0In, amount1In, amount0Out, amount1Out)
+
+            balance[mvs] += amount0Out - amount0In
+            balance[pair_token] += amount1Out - amount1In
+        else:
+            if log['topic1'] == addr_topic:
+                balance['mvs_transfer_in'] -= int(log['data'], 16)
+            if log['topic2'] == addr_topic:
+                balance['mvs_transfer_in'] += int(log['data'], 16)
+else:
+    print("Warning! transactions on router should be in transfer logs")
+# %%
+balance
+# %%
+balance[busd_addr.lower()] / 10**18
+# %%
+for i, hash in enumerate(addr_transfer_logs['transactionHash']):
+    print(i + 1, hash)
+# %%
+'0x' + addr_transfer_logs.iloc[1]['topic2'][26:66]
+# %%
+set(addr_transfer_logs['transactionHash']) - set(addr_txs.index)
+# %%
+pair_logs_hash_set = set()
+for i in range(4):
+    pair_logs_hash_set = pair_logs_hash_set.union(
+        pair_logs[i]['transactionHash'])
+# %%
+# Wow, it is a nice conclusion!
+set(mvs_txs.index).issubset(
+    pair_logs_hash_set.intersection(set(mvs_logs['transactionHash'])))
