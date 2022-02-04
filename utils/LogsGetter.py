@@ -67,11 +67,14 @@ class LogsGetter():
                         if x['transactionIndex'] != '0x' else 0
                     }, new_logs))
 
-            length = len(new_logs)
-            if length > 0:
-                start_block = new_logs[-1]['blockNumber']
+            logs = [log for log in logs if log['blockNumber'] != start_block]
 
             logs.extend(new_logs)
+
+            length = len(new_logs)
+
+            if length > 0:
+                start_block = new_logs[-1]['blockNumber']
 
         return logs
 
