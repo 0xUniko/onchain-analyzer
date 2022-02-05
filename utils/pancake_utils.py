@@ -67,6 +67,10 @@ def decode_swap_event(topic1, topic2, data):
     }
 
 
+def decode_sync_event(data):
+    return {'reserve0': int(data[2:66], 16), 'reserve1': int(data[66:], 16)}
+
+
 with Scanner(proxies='http://127.0.0.1:10809') as scanner:
     router_abi = scanner.scan('contract',
                               'getabi',

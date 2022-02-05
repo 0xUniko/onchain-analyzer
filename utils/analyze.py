@@ -7,7 +7,7 @@ from utils.bsc_client import Scanner, w3
 from utils.TxsGetter import TxsGetter
 from utils.pancake_utils import pancake_router_contract, wbnb_addr, busd_addr, bsc_usd_addr, dai_addr, doge_addr, pancake_router_topic, pancake_router_address, router_abi, router_input_decoder
 from utils.LogsGetter import LogsGetter
-from utils.pancake_utils import mint_topic, burn_topic, swap_topic, sync_topic, approval_topic, transfer_topic, hex_to_topic_name
+from utils.pancake_utils import mint_topic, burn_topic, swap_topic, sync_topic, approval_topic, transfer_topic, hex_to_topic_name, decode_transfer_event, decode_swap_event, decode_sync_event
 
 mvs = '0x98Afac3b663113D29dc2Cd8C2d1d14793692F110'
 mvs_topic = '0x000000000000000000000000' + mvs[2:].lower()
