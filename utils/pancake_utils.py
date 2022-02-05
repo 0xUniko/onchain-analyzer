@@ -48,18 +48,18 @@ def hex_to_topic_name(topic: str):
         return 'withdrawal'
 
 
-def decode_transfer_event(topics, data):
+def decode_transfer_event(topic1, topic2, data):
     return {
-        'from': '0x' + topics[1][26:],
-        'to': '0x' + topics[2][26:],
+        'from': '0x' + topic1[26:],
+        'to': '0x' + topic2[26:],
         'value': int(data, 16)
     }
 
 
-def decode_swap_event(topics, data):
+def decode_swap_event(topic1, topic2, data):
     return {
-        'sender': '0x' + topics[1][26:],
-        'to': '0x' + topics[2][26:],
+        'sender': '0x' + topic1[26:],
+        'to': '0x' + topic2[26:],
         'amount0In': int(data[2:68], 16),
         'amount1In': int(data[68:130], 16),
         'amount0Out': int(data[130:194], 16),
