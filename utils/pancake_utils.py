@@ -48,27 +48,30 @@ def hex_to_topic_name(topic: str):
         return 'withdrawal'
 
 
-def decode_transfer_event(topic1, topic2, data):
+def decode_transfer_event(topic1, topic2, data, normalize=0):
     return {
         'from': '0x' + topic1[26:],
         'to': '0x' + topic2[26:],
-        'value': int(data, 16)
+        'value': int(data, 16) / 10**normalize
     }
 
 
-def decode_swap_event(topic1, topic2, data):
+def decode_swap_event(topic1, topic2, data, normalize=[0, 0]):
     return {
         'sender': '0x' + topic1[26:],
         'to': '0x' + topic2[26:],
-        'amount0In': int(data[2:68], 16),
-        'amount1In': int(data[68:130], 16),
-        'amount0Out': int(data[130:194], 16),
-        'amount1Out': int(data[194:], 16)
+        'amount0In': int(data[2:68], 16) / 10**normalize[0],
+        'amount1In': int(data[68:130], 16) / 10**normalize[1],
+        'amount0Out': int(data[130:194], 16) / 10**normalize[0],
+        'amount1Out': int(data[194:], 16) / 10**normalize[1],
     }
 
 
-def decode_sync_event(data):
-    return {'reserve0': int(data[2:66], 16), 'reserve1': int(data[66:], 16)}
+def decode_sync_event(data, normalize=[0, 0]):
+    return {
+        'reserve0': int(data[2:66], 16) / 10**normalize[0],
+        'reserve1': int(data[66:], 16) / 10**normalize[1]
+    }
 
 
 with Scanner(proxies='http://127.0.0.1:10809') as scanner:
