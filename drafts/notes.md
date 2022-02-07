@@ -255,13 +255,16 @@ some formula (can be used to verify the correctness of data source):
 
 1,
 
+```python
 set(mvs_txs.index).issubset(
     pair_logs_hash_set.intersection(set(mvs_logs['transactionHash']))) == True
+```
 
 mvs_txs should be calculated by TxsGetter.get_router_txs_by_token, and this formula leads to the faster method TxsGetter.get_txs_and_external_accounts_holders
 
 2,
 
+```python
 def is_tx_hash_related_to_multi_transfer_logs(hash):
     method_name, input_data = router_input_decoder.decode(mvs_txs.loc[hash,'input'])
     return 'swap' in method_name and len(mvs_transfer_logs.loc[
@@ -269,6 +272,7 @@ def is_tx_hash_related_to_multi_transfer_logs(hash):
 
 mvs_txs.index.to_series().map(
     is_tx_hash_related_to_multi_transfer_logs).nunique() == 1
+```
 
 ## process
 
