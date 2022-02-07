@@ -243,6 +243,10 @@ TODO:从第一天起就开始往外转与卖币？币是哪里来的？
 
 check_approve == False
 
+## richmoon的记录
+
+持币实体数增长的那几天正好是爆拉的时间，此时前期埋伏的在出货
+
 ## Logs analysis
 
 except for liquidity serises and swap serises, there are the following situations:
@@ -273,6 +277,18 @@ def is_tx_hash_related_to_multi_transfer_logs(hash):
 mvs_txs.index.to_series().map(
     is_tx_hash_related_to_multi_transfer_logs).nunique() == 1
 ```
+
+## 想法
+
+交易量，参与交易人数，庄家（持币最多的人、曾经持有币最多的人，transfer的数量最大的人）
+
+散户进场大户出场就是离场点
+
+怎么判断是否进场何时进场？
+
+池子大小，购买的人与钱，那些拿出真金白银喂给土狗的地址
+
+筛选更多跑出来了的土狗，先用池子大小初筛看看
 
 ## process
 
