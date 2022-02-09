@@ -24,7 +24,8 @@ class Scanner():
     @retry(stop=stop_after_attempt(10),
            wait=wait_random(min=1, max=1.5),
            reraise=True)
-    def get_start_end_block_of_date(date: datetime.date) -> Tuple[int, int]:
+    def get_start_end_block_of_date(date: datetime.date,
+                                    proxies=None) -> Tuple[int, int]:
         '''
         The block starts after the date starts
         '''
@@ -36,7 +37,7 @@ class Scanner():
                 time.strptime(str(date + datetime.timedelta(days=1)),
                               '%Y-%m-%d'))) - 1
 
-        with Scanner() as scanner:
+        with Scanner(proxies=proxies) as scanner:
             start_block_no = int(
                 scanner.scan('block',
                              'getblocknobytime',

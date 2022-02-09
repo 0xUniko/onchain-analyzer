@@ -9,6 +9,7 @@ from tenacity import retry, wait_random, stop_after_attempt
 
 class LogsGetter():
     def __init__(self, proxies=None):
+        self.proxies = proxies
         self.scanner = Scanner(proxies=proxies).__enter__()
 
     def __enter__(self):
@@ -98,7 +99,7 @@ class LogsGetter():
 
             if str(date) == last_log:
                 start_block, end_block = Scanner.get_start_end_block_of_date(
-                    date)
+                    date, proxies=self.proxies)
 
                 if not logs.empty:
                     start_block = logs.iloc[-1]['blockNumber']
@@ -118,7 +119,8 @@ class LogsGetter():
                 if new_logs:
                     logs.to_csv(filename)
         else:
-            start_block, end_block = Scanner.get_start_end_block_of_date(date)
+            start_block, end_block = Scanner.get_start_end_block_of_date(
+                date, proxies=self.proxies)
 
             logs = self.get_logs_by_block_interval(start_block, end_block,
                                                    address, **topics_param)

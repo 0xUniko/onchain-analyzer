@@ -8,6 +8,7 @@ import pandas as pd
 
 class TxsGetter():
     def __init__(self, proxies=None):
+        self.proxies = proxies
         self.scanner = Scanner(proxies=proxies).__enter__()
 
     def __enter__(self):
@@ -71,13 +72,15 @@ class TxsGetter():
 
             if str(date) == last_tx:
                 if not txs.empty:
-                    _, endblock = Scanner.get_start_end_block_of_date(date)
+                    _, endblock = Scanner.get_start_end_block_of_date(
+                        date, proxies=self.proxies)
                     startblock = txs.iloc[-1]['blockNumber']
             else:
                 txs.set_index('hash', inplace=True)
                 return txs
         else:
-            startblock, endblock = Scanner.get_start_end_block_of_date(date)
+            startblock, endblock = Scanner.get_start_end_block_of_date(
+                date, proxies=self.proxies)
             txs = pd.DataFrame()
 
         print('startblock:', startblock, 'endblock:', endblock)
