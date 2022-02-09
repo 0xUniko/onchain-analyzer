@@ -168,10 +168,8 @@ class LogsGetter():
 
     def get_pairCreated_logs(
         self,
-        start_date: datetime.date = None,
+        start_date=datetime.date.today() - datetime.timedelta(days=30),
     ) -> pd.DataFrame:
-        start_date = datetime.date.today() - datetime.timedelta(
-            days=30) if start_date == None else start_date
 
         return self.get_all_logs('pairCreated_logs',
                                  pancake_factory_address,
