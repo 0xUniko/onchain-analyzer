@@ -138,20 +138,17 @@ def first_add_liquidity_log(token):
 
 
 # %%
-pairCreated_logs_date = pairCreated_logs.loc[pairCreated_logs['timeStamp'].map(
-    lambda x: datetime.date.fromtimestamp(x)) == datetime.date(2022, 1, 3)]
-
-created_tokens_count_date = pd.concat(
-    [pairCreated_logs_date['topic1'],
-     pairCreated_logs_date['topic2']]).value_counts()
-
-created_tokens_date = created_tokens_count_date.loc[
-    created_tokens_count_date < 10].index.to_series().reset_index(
-        drop=True).map(lambda x: '0x' + x[26:66])
+created_tokens_date = pairCreated_logs.loc[pairCreated_logs.apply(
+    lambda x: (x['topic1'] == busd_topic or x['topic1'] == wbnb_topic or x[
+        'topic2'] == busd_topic or x['topic2'] == wbnb_topic) and datetime.date
+    .fromtimestamp(x['timeStamp']) == datetime.date(2022, 1, 3),
+    axis=1)].apply(
+        lambda x: '0x' + x['topic1'][26:66] if x['topic2'] == busd_topic or x[
+            'topic2'] == wbnb_topic else '0x' + x['topic2'][26:66],
+        axis=1).value_counts().index.to_series().reset_index(drop=True)
 # %%
 tokens_with_liquidity = created_tokens_date.loc[
     created_tokens_date.map(first_add_liquidity_log) != False]
-
 # %%
 initial_liquidities = tokens_with_liquidity.to_frame().apply(
     lambda x: {
@@ -161,8 +158,25 @@ initial_liquidities = tokens_with_liquidity.to_frame().apply(
     axis=1,
     result_type='expand')
 # %%
+initial_liquidities
+# %%
 initial_liquidities.loc[initial_liquidities['bnb'] > 1].to_csv(
     'initial_liquidity0103.csv')
+# %%
+with TxsGetter() as txs_getter:
+    txs1 = txs_getter.all_txs(datetime.date(2022, 1, 3))
+inputs1 = txs1['input'].map(router_input_decoder.decode)
+
+txs_tokens1 = []
+for ipt in inputs1:
+    if 'swap' in ipt[0]:
+        txs_tokens1.extend(list(ipt[1]['path']))
+# %%
+initial_liquidities_and_txs_amounts = initial_liquidities.set_index(
+    'token').join(pd.Series(txs_tokens1).value_counts().rename(
+        'txs_amounts')).sort_values('txs_amounts', ascending=False)
+# %%
+initial_liquidities_and_txs_amounts.head(50)
 # %%
 # %%
 # CONCLUSION1: paired tokens
