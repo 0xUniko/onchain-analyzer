@@ -60,8 +60,8 @@ def decode_swap_event(topic1, topic2, data, normalize=[0, 0]):
     return {
         'sender': '0x' + topic1[26:],
         'to': '0x' + topic2[26:],
-        'amount0In': int(data[2:68], 16) / 10**normalize[0],
-        'amount1In': int(data[68:130], 16) / 10**normalize[1],
+        'amount0In': int(data[2:66], 16) / 10**normalize[0],
+        'amount1In': int(data[66:130], 16) / 10**normalize[1],
         'amount0Out': int(data[130:194], 16) / 10**normalize[0],
         'amount1Out': int(data[194:], 16) / 10**normalize[1],
     }
