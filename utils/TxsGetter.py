@@ -162,6 +162,21 @@ class TxsGetter():
 
         return set(holders) - contract_holders, pd.concat(txs)
 
+    def get_router_liquidity_txs(self, date: datetime.date):
+        txs = self.all_txs(date=date)
+
+        txs = txs.join(
+            txs.apply(lambda x: router_input_decoder.decode(x['input']),
+                      axis=1,
+                      result_type='expand')).rename(columns={
+                          0: 'method_name',
+                          1: 'data'
+                      })
+
+        del txs['input']
+
+        return txs.loc[txs['method_name'].map(lambda x: 'Liquidity' in x)]
+
     def get_txs_by_hashs(self, hashs: List[str], start_date: datetime.date,
                          end_date: datetime.date.today()):
         hashs = set(hashs)
@@ -239,3 +254,6 @@ class TxsGetter():
             start_date += datetime.timedelta(days=1)
 
         return pd.concat(txs)
+
+
+# %%
