@@ -74,6 +74,27 @@ def decode_sync_event(data, normalize=[0, 0]):
     }
 
 
+def decode_pairCreated_logs(logs):
+    def get_token_and_pair(log):
+        if log['topic1'] == wbnb_topic or log['topic1'] == busd_topic:
+            return {
+                'token': '0x' + log['topic2'][26:66],
+                'pair': '0x' + log['data'][26:66]
+            }
+        else:
+            return {
+                'token': '0x' + log['topic1'][26:66],
+                'pair': '0x' + log['data'][26:66]
+            }
+
+    return logs.loc[(logs['topic1'] == busd_topic) |
+                    (logs['topic1'] == wbnb_topic) |
+                    (logs['topic2'] == busd_topic) |
+                    (logs['topic2'] == wbnb_topic)].apply(get_token_and_pair,
+                                                          axis=1,
+                                                          result_type='expand')
+
+
 with Scanner(proxies='http://127.0.0.1:10809') as scanner:
     router_abi = scanner.scan('contract',
                               'getabi',
