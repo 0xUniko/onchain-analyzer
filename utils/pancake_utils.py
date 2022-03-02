@@ -74,6 +74,13 @@ def decode_sync_event(data, normalize=[0, 0]):
     }
 
 
+def decode_mint_event(data, normalize=[0, 0]):
+    return {
+        'amount0': int(data[2:66], 16) / 10**normalize[0],
+        'amount1': int(data[66:], 16) / 10**normalize[1]
+    }
+
+
 def decode_pairCreated_logs(logs):
     def get_token_and_pair(log):
         if log['topic1'] == wbnb_topic or log['topic1'] == busd_topic:
