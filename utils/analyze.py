@@ -9,7 +9,7 @@ from utils.pancake_utils import pancake_router_contract, wbnb_addr, busd_addr, b
 from utils.LogsGetter import LogsGetter
 from utils.pancake_utils import mint_topic, burn_topic, swap_topic, sync_topic, approval_topic, transfer_topic, hex_to_topic_name, decode_transfer_event, decode_swap_event, decode_sync_event
 
-mvs = '0x98Afac3b663113D29dc2Cd8C2d1d14793692F110'
+mvs = '0x98Afac3b663113D29dc2Cd8C2d1d14793692F110'.lower()
 mvs_topic = '0x000000000000000000000000' + mvs[2:].lower()
 pair_addr = '0x4ff4714572dc36392f86bb1d62af79a081e463f8'
 pair_addrs = [
@@ -22,6 +22,11 @@ pair_addrs = [
     # mvs-wbnb
     '0x4ff4714572dc36392f86bb1d62af79a081e463f8'
 ]
+busd_addr_created_log = {
+    'token0': mvs,
+    'token1': busd_addr,
+    'pair': pair_addrs[0]
+}
 mvs_start_date = datetime.date(2021, 12, 24)
 
 # %%
