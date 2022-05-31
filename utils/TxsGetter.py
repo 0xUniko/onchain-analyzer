@@ -1,12 +1,13 @@
 #%%
 from typing import List
-from utils.bsc_client import Scanner
+from utils.Scanner import Scanner
 from utils.pancake_utils import router_input_decoder
 import datetime, os, json, warnings
 import pandas as pd
 
 
 class TxsGetter():
+
     def __init__(self, proxies=None):
         self.proxies = proxies
         self.scanner = Scanner(proxies=proxies).__enter__()

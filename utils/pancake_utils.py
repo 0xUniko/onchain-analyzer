@@ -1,4 +1,4 @@
-from .bsc_client import w3, Scanner
+from .Scanner import w3, Scanner
 import json
 
 pancake_factory_address = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'.lower()
@@ -82,6 +82,7 @@ def decode_mint_event(data, normalize=[0, 0]):
 
 
 def decode_pairCreated_logs(logs):
+
     def get_token_and_pair(log):
         if log['topic1'] == wbnb_topic or log['topic1'] == busd_topic:
             return {
@@ -123,6 +124,7 @@ from web3_input_decoder.utils import (
 
 # the path should be array not tuple
 class InputDecoder():
+
     def __init__(self, abi):
         self.selector_to_type_def = {}
 

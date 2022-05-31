@@ -1,5 +1,5 @@
 #%%
-from utils.bsc_client import w3, scan
+from utils.Scanner import w3, scan
 from utils.pancake_utils import pancake_router_contract, wbnb_addr, pancake_router_topic
 
 cheemchar = '0x826fab68b79af8a31be6dda766437ddddc540dfd'
@@ -116,7 +116,6 @@ print(amount0Out)
 int(amount0Out, 16)
 
 # %%
-
 '0x00000000000000000000000010ed43c718714eb63d5aa57b78b54704e256024e' in [
     '0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822',
     '0x00000000000000000000000010ed43c718714eb63d5aa57b78b54704e256024e',

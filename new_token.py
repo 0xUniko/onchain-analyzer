@@ -1,6 +1,6 @@
 #%%
 from typing import TypedDict
-from utils.bsc_client import w3, scan
+from utils.Scanner import w3, scan
 from utils.pancake_utils import pancake_factory_address, pairCreated_topic, wbnb_topic, pancake_router_contract, wbnb_addr
 from utils.get_pairCreated_logs import get_pairCreated_logs
 import pandas as pd

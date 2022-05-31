@@ -3,7 +3,7 @@ import datetime, time
 from numpy import percentile
 import pandas as pd
 
-from utils.bsc_client import Scanner, w3
+from utils.Scanner import Scanner, w3
 from utils.TxsGetter import TxsGetter
 from utils.pancake_utils import pancake_router_contract, wbnb_addr, busd_addr, bsc_usd_addr, dai_addr, doge_addr, pancake_router_topic, pancake_router_address, router_abi, router_input_decoder
 from utils.LogsGetter import LogsGetter

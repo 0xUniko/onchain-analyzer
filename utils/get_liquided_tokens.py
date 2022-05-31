@@ -1,6 +1,6 @@
 #%%
 from re import S
-from utils.bsc_client import Scanner
+from utils.Scanner import Scanner
 from utils.pancake_utils import wbnb_topic, wbnb_addr
 from utils.get_pairCreated_logs import get_pairCreated_logs
 from tenacity import Retrying, stop_after_attempt, wait_random

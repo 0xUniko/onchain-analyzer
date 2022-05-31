@@ -1,6 +1,6 @@
 #%%
 from typing import List, Tuple
-from utils.bsc_client import Scanner
+from utils.Scanner import Scanner
 from utils.pancake_utils import pancake_factory_address, pairCreated_topic
 import datetime, os
 import pandas as pd
@@ -8,6 +8,7 @@ from tenacity import retry, wait_random, stop_after_attempt
 
 
 class LogsGetter():
+
     def __init__(self, proxies=None):
         self.proxies = proxies
         self.scanner = Scanner(proxies=proxies).__enter__()

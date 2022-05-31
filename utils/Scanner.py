@@ -16,6 +16,7 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
 class Scanner():
+
     def __init__(self, api=api, key=api_key, proxies=None):
         self.api = api
         self.key = key

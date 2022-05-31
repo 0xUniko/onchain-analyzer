@@ -5,7 +5,7 @@ import pandas as pd
 import networkx as nx
 from tqdm import tqdm
 
-from utils.bsc_client import Scanner, w3
+from utils.Scanner import Scanner, w3
 from utils.TxsGetter import TxsGetter
 from utils.pancake_utils import wbnb_addr, busd_addr, bsc_usd_addr, pancake_router_topic, router_input_decoder
 from utils.LogsGetter import LogsGetter
