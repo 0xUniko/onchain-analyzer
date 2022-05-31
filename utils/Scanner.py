@@ -6,10 +6,12 @@ from web3.middleware import geth_poa_middleware
 from tenacity import retry, wait_random, stop_after_attempt
 import pandas as pd
 
-api_key = dotenv_values()['BSCSCAN_API_KEY']
-api = 'https://api.bscscan.com/api'
+api_key = dotenv_values()['API_KEY']
+api = 'https://api.etherscan.io/api'
+# api = 'https://api.bscscan.com/api'
 # api = 'https://api-test.bscscan.com/api'
-endpoint = dotenv_values()['ANKR_BSC_ENDPOINT']
+# endpoint = dotenv_values()['ANKR_BSC_ENDPOINT']
+endpoint = 'https://rpc.ankr.com/eth'
 
 w3 = Web3(HTTPProvider(endpoint))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -17,7 +19,7 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 class Scanner():
 
-    def __init__(self, api=api, key=api_key, proxies=None):
+    def __init__(self, api=api, key=api_key, proxies='http://127.0.0.1:10809'):
         self.api = api
         self.key = key
         self.proxies = proxies
