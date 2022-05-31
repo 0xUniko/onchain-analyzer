@@ -6,7 +6,7 @@ import datetime, os, json, warnings
 import pandas as pd
 
 
-class TxsGetter():
+class BscTxsGetter():
 
     def __init__(self, proxies=None):
         self.proxies = proxies
