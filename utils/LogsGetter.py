@@ -1,7 +1,7 @@
 #%%
 from typing import List, Tuple
 from utils.Scanner import Scanner
-from utils.pancake_utils import pancake_factory_address, pairCreated_topic
+# from utils.pancake_utils import pancake_factory_address, pairCreated_topic
 import datetime, os
 import pandas as pd
 from tenacity import retry, wait_random, stop_after_attempt
@@ -9,7 +9,7 @@ from tenacity import retry, wait_random, stop_after_attempt
 
 class LogsGetter():
 
-    def __init__(self, proxies=None):
+    def __init__(self, proxies='http://127.0.0.1:10809'):
         self.proxies = proxies
         self.scanner = Scanner(proxies=proxies).__enter__()
 
@@ -169,12 +169,12 @@ class LogsGetter():
             ) for i, token in enumerate(token_addrs)
         ]
 
-    def get_pairCreated_logs(
-        self,
-        start_date=datetime.date.today() - datetime.timedelta(days=30),
-    ) -> pd.DataFrame:
+    # def get_pairCreated_logs(
+    #     self,
+    #     start_date=datetime.date.today() - datetime.timedelta(days=30),
+    # ) -> pd.DataFrame:
 
-        return self.get_all_logs('pairCreated_logs',
-                                 pancake_factory_address,
-                                 start_date,
-                                 topic0=pairCreated_topic)
+    #     return self.get_all_logs('pairCreated_logs',
+    #                              pancake_factory_address,
+    #                              start_date,
+    #                              topic0=pairCreated_topic)
