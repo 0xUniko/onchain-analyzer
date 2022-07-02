@@ -1,4 +1,5 @@
 import warnings
+import pandas as pd
 from utils.Scanner import Scanner
 
 
@@ -43,4 +44,4 @@ class SimpleTxsGetter():
             else:
                 startblock = new_txs[-1]['blockNumber']
 
-        return new_txs_collector
+        return pd.DataFrame(new_txs_collector)
