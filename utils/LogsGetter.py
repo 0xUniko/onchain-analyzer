@@ -1,6 +1,8 @@
 #%%
-from typing import List
+from typing import List, Optional, cast
 from utils.Scanner import Scanner
+from utils.get_token_name import get_token_name
+from eth_typing.evm import ChecksumAddress
 # from utils.pancake_utils import pancake_factory_address, pairCreated_topic
 from eth_typing.evm import HexAddress
 import datetime, os
@@ -151,13 +153,17 @@ class LogsGetter():
 
     def get_token_logs(
         self,
-        token_name: str,
         token_addr: HexAddress,
+        token_name: Optional[str] = None,
     ) -> pd.DataFrame:
         start_timestamp_hex = self.scanner.scan(
             'logs', 'getLogs', address=token_addr)[0]['timeStamp']
 
         start_date = datetime.date.fromtimestamp(int(start_timestamp_hex, 16))
+
+        if token_name is None:
+            token_chechsum_addr = cast(ChecksumAddress, token_addr)
+            token_name = get_token_name(token_chechsum_addr)
 
         return self.get_all_logs(token_name, token_addr, start_date)
 
@@ -168,8 +174,8 @@ class LogsGetter():
     ) -> List[pd.DataFrame]:
         return [
             self.get_token_logs(
-                os.path.join(token_name, f'pair{i}'),
                 token,
+                os.path.join(token_name, f'pair{i}'),
             ) for i, token in enumerate(token_addrs)
         ]
 
