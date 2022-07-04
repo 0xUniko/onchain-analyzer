@@ -2,16 +2,22 @@ from typing import List, Tuple
 import httpx, datetime, time, os, json
 from dotenv import dotenv_values
 from web3 import Web3, HTTPProvider
-from web3.middleware import geth_poa_middleware
-from tenacity import retry, wait_random, stop_after_attempt
+from web3.middleware.geth_poa import geth_poa_middleware
+from tenacity import retry
+from tenacity.wait import wait_random
+from tenacity.stop import stop_after_attempt
 import pandas as pd
 
 api_key = dotenv_values()['API_KEY']
+if api_key is None:
+    raise ValueError('API_KEY is required')
 api = 'https://api.etherscan.io/api'
 # api = 'https://api.bscscan.com/api'
 # api = 'https://api-test.bscscan.com/api'
 # endpoint = dotenv_values()['ANKR_BSC_ENDPOINT']
-endpoint = 'https://rpc.ankr.com/eth'
+endpoint = dotenv_values()['ALCHEMY_ETH_API']
+# endpoint = 'https://rpc.ankr.com/eth'
+proxy = 'http://127.0.0.1:10809'
 
 w3 = Web3(HTTPProvider(endpoint))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -19,7 +25,7 @@ w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 class Scanner():
 
-    def __init__(self, api=api, key=api_key, proxies='http://127.0.0.1:10809'):
+    def __init__(self, api=api, key=api_key, proxies=proxy):
         self.api = api
         self.key = key
         self.proxies = proxies
@@ -27,6 +33,7 @@ class Scanner():
     @retry(stop=stop_after_attempt(10),
            wait=wait_random(min=1, max=1.5),
            reraise=True)
+    @staticmethod
     def get_start_end_block_of_date(date: datetime.date,
                                     proxies=None) -> Tuple[int, int]:
         '''
@@ -40,7 +47,7 @@ class Scanner():
                 time.strptime(str(date + datetime.timedelta(days=1)),
                               '%Y-%m-%d'))) - 1
 
-        with Scanner(proxies=proxies) as scanner:
+        with Scanner(proxies=proxy) as scanner:
             start_block_no = int(
                 scanner.scan('block',
                              'getblocknobytime',
@@ -79,7 +86,7 @@ class Scanner():
             **kwargs
         }
 
-        res = await self.client.get(url=self.api, params=params)
+        res = await self.async_client.get(url=self.api, params=params)
 
         return res.json()['result']
 
@@ -88,7 +95,8 @@ class Scanner():
         return self
 
     async def __aenter__(self):
-        self.client = httpx.AsyncClient(proxies=self.proxies, timeout=None)
+        self.async_client = httpx.AsyncClient(proxies=self.proxies,
+                                              timeout=None)
         return self
 
     def __exit__(self, exc_type, exc_value, trace):
@@ -96,5 +104,5 @@ class Scanner():
         return False
 
     async def __aexit__(self, exc_type, exc_value, trace):
-        await self.client.aclose()
+        await self.async_client.aclose()
         return False

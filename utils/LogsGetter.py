@@ -1,10 +1,13 @@
 #%%
-from typing import List, Tuple
+from typing import List
 from utils.Scanner import Scanner
 # from utils.pancake_utils import pancake_factory_address, pairCreated_topic
+from eth_typing.evm import HexAddress
 import datetime, os
 import pandas as pd
-from tenacity import retry, wait_random, stop_after_attempt
+from tenacity import retry
+from tenacity.wait import wait_random
+from tenacity.stop import stop_after_attempt
 
 
 class LogsGetter():
@@ -80,7 +83,7 @@ class LogsGetter():
 
         return logs
 
-    def get_logs(self, name: str, address: str, date: datetime.date,
+    def get_logs(self, name: str, address: HexAddress, date: datetime.date,
                  **topics_param) -> pd.DataFrame:
         dirname = os.path.join('utils', name)
 
@@ -132,7 +135,8 @@ class LogsGetter():
 
         return logs
 
-    def get_all_logs(self, name: str, address: str, start_date: datetime.date,
+    def get_all_logs(self, name: str, address: HexAddress,
+                     start_date: datetime.date,
                      **topics_param) -> pd.DataFrame:
         date = start_date
         today = datetime.date.today()
@@ -148,7 +152,7 @@ class LogsGetter():
     def get_token_logs(
         self,
         token_name: str,
-        token_addr: str,
+        token_addr: HexAddress,
     ) -> pd.DataFrame:
         start_timestamp_hex = self.scanner.scan(
             'logs', 'getLogs', address=token_addr)[0]['timeStamp']
@@ -160,7 +164,7 @@ class LogsGetter():
     def get_pair_logs(
         self,
         token_name: str,
-        token_addrs: List[str],
+        token_addrs: List[HexAddress],
     ) -> List[pd.DataFrame]:
         return [
             self.get_token_logs(

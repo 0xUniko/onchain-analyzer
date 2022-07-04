@@ -1,6 +1,7 @@
 import warnings
 import pandas as pd
 from utils.Scanner import Scanner
+from eth_typing.evm import HexAddress
 
 
 class SimpleTxsGetter():
@@ -16,7 +17,7 @@ class SimpleTxsGetter():
         self.scanner.__exit__(exc_type, exc_value, trace)
         return False
 
-    def all_txs(self, address):
+    def all_txs(self, address: HexAddress):
         new_txs_collector = []
         startblock = 1
 
