@@ -2,9 +2,8 @@
 from typing import List, Optional, cast
 from utils.Scanner import Scanner
 from utils.get_token_name import get_token_name
-from eth_typing.evm import ChecksumAddress
+from eth_typing.evm import ChecksumAddress, HexAddress, Address
 # from utils.pancake_utils import pancake_factory_address, pairCreated_topic
-from eth_typing.evm import HexAddress
 import datetime, os
 import pandas as pd
 from tenacity import retry
@@ -153,7 +152,7 @@ class LogsGetter():
 
     def get_token_logs(
         self,
-        token_addr: HexAddress,
+        token_addr: ChecksumAddress,
         token_name: Optional[str] = None,
     ) -> pd.DataFrame:
         start_timestamp_hex = self.scanner.scan(
@@ -165,12 +164,17 @@ class LogsGetter():
             token_chechsum_addr = cast(ChecksumAddress, token_addr)
             token_name = get_token_name(token_chechsum_addr)
 
-        return self.get_all_logs(token_name, token_addr, start_date)
+        if isinstance(token_addr, bytes):
+            addr = cast(HexAddress, token_addr.hex())
+        else:
+            addr = token_addr
+
+        return self.get_all_logs(token_name, addr, start_date)
 
     def get_pair_logs(
         self,
         token_name: str,
-        token_addrs: List[HexAddress],
+        token_addrs: List[ChecksumAddress],
     ) -> List[pd.DataFrame]:
         return [
             self.get_token_logs(
