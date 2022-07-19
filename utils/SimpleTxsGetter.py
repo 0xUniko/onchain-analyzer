@@ -1,7 +1,7 @@
 import warnings
 import pandas as pd
 from utils.Scanner import Scanner
-from eth_typing.evm import HexAddress
+from eth_typing.evm import HexAddress, Address
 
 
 class SimpleTxsGetter():
@@ -17,16 +17,21 @@ class SimpleTxsGetter():
         self.scanner.__exit__(exc_type, exc_value, trace)
         return False
 
-    def all_txs(self, address: HexAddress):
+    def all_txs(self, address: HexAddress | Address):
         new_txs_collector = []
         startblock = 1
+
+        if isinstance(address, bytes):
+            addr = address.hex()
+        else:
+            addr = address
 
         while True:
             print('startblock:', startblock)
 
             new_txs = self.scanner.scan('account',
                                         'txlist',
-                                        address=address,
+                                        address=addr,
                                         startblock=startblock)
             if not new_txs:
                 warnings.warn(f'startblock {startblock} is empty!')
