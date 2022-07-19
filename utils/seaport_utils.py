@@ -84,6 +84,9 @@ class OrderFulfilledEvent():
             for i in range(self.consideration_length)
         ]
 
+    def get_deal_price(self):
+        return max([consi.amount / 10**18 for consi in self.consideration])
+
     def __repr__(self):
         return str({
             'offerer': self.offerer,
@@ -102,13 +105,8 @@ def get_deal_price_from_seaport_tx(seaport_tx: TxData) -> float:
 
         for _, log in logs.iterrows():
             if log['topics'][0].hex() == OrderFulfilled_event_sig:
-                order_fulfilled_event = OrderFulfilledEvent(
-                    topics=log['topics'], data=log['data'])
-
-                return max([
-                    consi.amount / 10**18
-                    for consi in order_fulfilled_event.consideration
-                ])
+                return OrderFulfilledEvent(topics=log['topics'],
+                                           data=log['data']).get_deal_price()
 
         raise Exception("This transaction does not have OrderFulfilled event")
 
