@@ -1,5 +1,5 @@
 from utils.Scanner import w3
-from utils.SimpleTxsGetter import SimpleTxsGetter
+from utils.CompleteGetter import CompleteGetter
 from utils.LogsGetter import LogsGetter
 from eth_typing.evm import ChecksumAddress
 from eth_typing.encoding import HexStr
@@ -32,6 +32,14 @@ class SpentItem():
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
 
+    def __repr__(self):
+        return str({
+            'itemType': self.itemType,
+            'token': self.token,
+            'identifier': self.identifier,
+            'amount': self.amount
+        })
+
 
 class ReceivedItem():
 
@@ -41,6 +49,14 @@ class ReceivedItem():
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
         self.recipient = '0x' + data[64 * 4:64 * 5]
+
+    def __repr__(self):
+        return str({
+            'itemType': self.itemType,
+            'token': self.token,
+            'amount': self.amount,
+            'recipient': self.recipient
+        })
 
 
 class OrderFulfilledEvent():
@@ -68,6 +84,16 @@ class OrderFulfilledEvent():
             for i in range(self.consideration_length)
         ]
 
+    def __repr__(self):
+        return str({
+            'offerer': self.offerer,
+            'zone': self.zone,
+            'orderHash': self.orderHash,
+            'recipient': self.recipient,
+            'offer': self.offer,
+            'consideration': self.consideration
+        })
+
 
 def get_deal_price_from_seaport_tx(seaport_tx: TxData) -> float:
     if 'hash' in seaport_tx:
@@ -89,21 +115,21 @@ def get_deal_price_from_seaport_tx(seaport_tx: TxData) -> float:
     raise Exception("This transaction does not have hash")
 
 
-def get_nft_ath(nft_addr: ChecksumAddress) -> float:
-    with SimpleTxsGetter() as txs_getter:
-        txs = txs_getter.all_txs(address=nft_addr)
+# def get_nft_ath(nft_addr: ChecksumAddress) -> float:
+#     with CompleteGetter() as txs_getter:
+#         txs = txs_getter.get_all(address=nft_addr)
 
-    with LogsGetter() as logs_getter:
-        logs = logs_getter.get_token_logs(nft_addr)
+#     with LogsGetter() as logs_getter:
+#         logs = logs_getter.get_token_logs(nft_addr)
 
-    exterier_logs = logs.loc[~logs['transactionHash'].isin(txs['hash'])]
+#     exterier_logs = logs.loc[~logs['transactionHash'].isin(txs['hash'])]
 
-    nft_txs = []
-    for hash in tqdm(exterier_logs['transactionHash']):
-        tx = w3.eth.get_transaction(hash)
-        nft_txs.append(tx)
-    # nft_txs = pd.DataFrame(nft_txs)
-    # seaport_txs = nft_txs.loc[nft_txs['to'] == seaport_addr]
+#     nft_txs = []
+#     for hash in tqdm(exterier_logs['transactionHash']):
+#         tx = w3.eth.get_transaction(hash)
+#         nft_txs.append(tx)
+#     # nft_txs = pd.DataFrame(nft_txs)
+#     # seaport_txs = nft_txs.loc[nft_txs['to'] == seaport_addr]
 
-    # return seaport_txs
-    return 1
+#     # return seaport_txs
+#     return 1
