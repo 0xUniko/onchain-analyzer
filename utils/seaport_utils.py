@@ -16,7 +16,7 @@ seaport_addr = cast(ChecksumAddress,
 OrderFulfilled_event_sig = w3.keccak(
     text=
     'OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])'
-).hex()  #0x9d9af8e38d66c62e2c12f0225249fd9d721c54b83f48d9352c97c6cacdcb6f31
+)  #HexBytes(0x9d9af8e38d66c62e2c12f0225249fd9d721c54b83f48d9352c97c6cacdcb6f31)
 
 with open('utils/seaport_abi.json', 'r') as f:
     seaport_abi = json.load(f)
