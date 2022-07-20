@@ -1,4 +1,5 @@
 .env
+__pycache__
 utils/__pycache__
 utils/storage
 dask-worker-space
