@@ -2,9 +2,10 @@ import warnings
 import pandas as pd
 from utils.Scanner import Scanner
 from eth_typing.evm import HexAddress, Address
+from typing import Literal
 
 
-class SimpleTxsGetter():
+class CompleteGetter():
 
     def __init__(self, proxies='http://127.0.0.1:10809'):
         self.proxies = proxies
@@ -17,7 +18,8 @@ class SimpleTxsGetter():
         self.scanner.__exit__(exc_type, exc_value, trace)
         return False
 
-    def all_txs(self, address: HexAddress | Address):
+    def get_all(self, address: HexAddress | Address,
+                action: Literal['txlist'] | Literal['tokennfttx']):
         new_txs_collector = []
         startblock = 1
 
@@ -30,7 +32,7 @@ class SimpleTxsGetter():
             print('startblock:', startblock)
 
             new_txs = self.scanner.scan('account',
-                                        'txlist',
+                                        action,
                                         address=addr,
                                         startblock=startblock)
             if not new_txs:
@@ -42,8 +44,11 @@ class SimpleTxsGetter():
             ]
 
             if new_txs:
-                new_txs_collector.extend(
-                    [tx for tx in new_txs if tx['isError'] != '1'])
+                if action == 'txlist':
+                    new_txs_collector.extend(
+                        [tx for tx in new_txs if tx['isError'] != '1'])
+                else:
+                    new_txs_collector.extend([tx for tx in new_txs])
 
             if new_txs == None or len(new_txs) != 10000:
                 break
