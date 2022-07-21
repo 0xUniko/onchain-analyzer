@@ -1,6 +1,5 @@
 from utils.Scanner import w3
-from utils.CompleteGetter import CompleteGetter
-from utils.LogsGetter import LogsGetter
+from utils.addr_trac_padding import addr_trac
 from eth_typing.evm import ChecksumAddress, HexAddress
 from eth_typing.encoding import HexStr
 from web3.types import TxData
@@ -63,11 +62,11 @@ class ReceivedItem():
 class OrderFulfilledEvent():
 
     def __init__(self, topics: Sequence[HexBytes], data: HexStr):
-        self.offerer = topics[1]
+        self.offerer = addr_trac(topics[1])
         self.zone = topics[2]
         data_hex = data[2:]
         self.orderHash = '0x' + data_hex[:64]
-        self.recipient = '0x' + data_hex[88:128]
+        self.recipient = cast(HexAddress, '0x' + data_hex[88:128])
 
         self.offer_length = int(data_hex[64 * 4:64 * 5], 16)
         self.offer = [
