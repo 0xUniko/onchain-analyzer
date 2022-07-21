@@ -1,7 +1,7 @@
 from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
 from utils.LogsGetter import LogsGetter
-from eth_typing.evm import ChecksumAddress
+from eth_typing.evm import ChecksumAddress, HexAddress
 from eth_typing.encoding import HexStr
 from web3.types import TxData
 from hexbytes import HexBytes
@@ -42,13 +42,14 @@ class SpentItem():
 
 
 class ReceivedItem():
+    recipient: HexAddress
 
     def __init__(self, data: str):
         self.itemType = int(data[:64], 16)
         self.token = '0x' + data[88:64 * 2]
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
-        self.recipient = '0x' + data[64 * 4:64 * 5]
+        self.recipient = cast(HexAddress, '0x' + data[64 * 4:64 * 5])
 
     def __repr__(self):
         return str({
@@ -86,6 +87,14 @@ class OrderFulfilledEvent():
 
     def get_deal_price(self):
         return max([consi.amount / 10**18 for consi in self.consideration])
+
+    # def get_deal_balance(self, account: HexAddress):
+    #     coeff = -1 if account in {
+    #         consi.recipient
+    #         for consi in self.consideration
+    #     } else 1
+
+    #     return coeff * self.get_deal_price()
 
     def __repr__(self):
         return str({
