@@ -12,6 +12,8 @@ from typing import Sequence, cast
 seaport_addr = cast(ChecksumAddress,
                     '0x00000000006c3852cbEf3e08E8dF289169EdE581')
 
+# weth='0xbd4455da5929d5639ee098abfaa3241e9ae111af'
+
 OrderFulfilled_event_sig = w3.keccak(
     text=
     'OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])'
@@ -48,7 +50,7 @@ class ReceivedItem():
         self.token = '0x' + data[88:64 * 2]
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
-        self.recipient = cast(HexAddress, '0x' + data[64 * 4:64 * 5])
+        self.recipient = cast(HexAddress, '0x' + data[64 * 4 + 24:64 * 5])
 
     def __repr__(self):
         return str({
@@ -88,10 +90,13 @@ class OrderFulfilledEvent():
         return max([consi.amount / 10**18 for consi in self.consideration])
 
     # def get_deal_balance(self, account: HexAddress):
-    #     coeff = -1 if account in {
-    #         consi.recipient
-    #         for consi in self.consideration
-    #     } else 1
+    #     if self.offerer == account:
+    #         coeff = -1
+    #     elif self.recipient == account:
+    #         coeff = 1
+    #     else:
+    #         raise ValueError(
+    #             "the input account does not match either offerer or recipient")
 
     #     return coeff * self.get_deal_price()
 
