@@ -7,12 +7,13 @@ from hexbytes import HexBytes
 import pandas as pd
 from tqdm import tqdm
 import json
-from typing import Sequence, cast
+from enum import IntEnum
+from typing import Sequence, cast, TypedDict
 
 seaport_addr = cast(ChecksumAddress,
                     '0x00000000006c3852cbEf3e08E8dF289169EdE581')
 
-# weth='0xbd4455da5929d5639ee098abfaa3241e9ae111af'
+# weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 
 OrderFulfilled_event_sig = w3.keccak(
     text=
@@ -25,11 +26,24 @@ with open('utils/seaport_abi.json', 'r') as f:
 seaport_contract = w3.eth.contract(address=seaport_addr, abi=seaport_abi)
 
 
+class ItemType(IntEnum):
+    NATIVE = 0,
+    ERC20 = 1,
+    ERC721 = 2,
+    ERC1155 = 3,
+    ERC721_WITH_CRITERIA = 4,
+    ERC1155_WITH_CRITERIA = 5
+
+
 class SpentItem():
+    itemType: ItemType
+    token: HexAddress
+    identifier: int
+    amount: int
 
     def __init__(self, data: str):
-        self.itemType = int(data[:64], 16)
-        self.token = '0x' + data[88:64 * 2]
+        self.itemType = cast(ItemType, int(data[:64], 16))
+        self.token = cast(HexAddress, '0x' + data[88:64 * 2])
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
 
@@ -43,11 +57,15 @@ class SpentItem():
 
 
 class ReceivedItem():
+    itemType: ItemType
+    token: HexAddress
+    identifier: int
+    amount: int
     recipient: HexAddress
 
     def __init__(self, data: str):
-        self.itemType = int(data[:64], 16)
-        self.token = '0x' + data[88:64 * 2]
+        self.itemType = cast(ItemType, int(data[:64], 16))
+        self.token = cast(HexAddress, '0x' + data[88:64 * 2])
         self.identifier = int(data[64 * 2:64 * 3], 16)
         self.amount = int(data[64 * 3:64 * 4], 16)
         self.recipient = cast(HexAddress, '0x' + data[64 * 4 + 24:64 * 5])
@@ -59,6 +77,12 @@ class ReceivedItem():
             'amount': self.amount,
             'recipient': self.recipient
         })
+
+
+class DealBalance(TypedDict):
+    eth: float
+    nft_amount: int
+    nft_address: HexAddress
 
 
 class OrderFulfilledEvent():
@@ -89,9 +113,29 @@ class OrderFulfilledEvent():
     def get_deal_price(self):
         return max([consi.amount / 10**18 for consi in self.consideration])
 
-    # def get_deal_balance(self, account: HexAddress):
+    # def get_deal_balance(self, account: HexAddress) -> DealBalance:
+    #     assert self.offer_length == 1, 'multiple offers should use this function'
+
     #     if self.offerer == account:
-    #         coeff = -1
+    #         match self.offer[0].itemType:
+    #             case ItemType.NATIVE:
+    #                 pass
+    #             case ItemType.
+    #         if self.offer[0].token == weth:
+    #             eth = -self.offer[0].amount / 10**18
+
+    #         return {
+    #             'eth':
+    #             -sum([
+    #                 offer.amount / 10**18
+    #                 for offer in self.offer if offer.token == weth
+    #             ]),
+    #             'nft_amount':
+    #             sum([
+    #                 consi.amount for consi in self.consideration
+    #                 if consi.recipient == account
+    #             ])
+    #         }
     #     elif self.recipient == account:
     #         coeff = 1
     #     else:
