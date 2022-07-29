@@ -13,7 +13,7 @@ from typing import Sequence, cast, TypedDict
 seaport_addr = cast(ChecksumAddress,
                     '0x00000000006c3852cbEf3e08E8dF289169EdE581')
 
-# weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 
 OrderFulfilled_event_sig = w3.keccak(
     text=
@@ -110,39 +110,87 @@ class OrderFulfilledEvent():
             for i in range(self.consideration_length)
         ]
 
-    def get_deal_price(self):
-        return max([consi.amount / 10**18 for consi in self.consideration])
+    def get_deal_balance(self, account: HexAddress) -> DealBalance:
+        '''
+        get the account deal balance from a OrderFulfilledEvent
+        many limitations exist here and could be removed in future
+        '''
+        assert self.offerer == account or self.recipient == account, "the input account does not match either offerer or recipient"
 
-    # def get_deal_balance(self, account: HexAddress) -> DealBalance:
-    #     assert self.offer_length == 1, 'multiple offers should use this function'
+        # could be removed in future
+        assert self.offer_length == 1, 'the amount of offer is more than one'
 
-    #     if self.offerer == account:
-    #         match self.offer[0].itemType:
-    #             case ItemType.NATIVE:
-    #                 pass
-    #             case ItemType.
-    #         if self.offer[0].token == weth:
-    #             eth = -self.offer[0].amount / 10**18
+        nft_consi = [
+            consi for consi in self.consideration if consi.recipient == account
+        ]
 
-    #         return {
-    #             'eth':
-    #             -sum([
-    #                 offer.amount / 10**18
-    #                 for offer in self.offer if offer.token == weth
-    #             ]),
-    #             'nft_amount':
-    #             sum([
-    #                 consi.amount for consi in self.consideration
-    #                 if consi.recipient == account
-    #             ])
-    #         }
-    #     elif self.recipient == account:
-    #         coeff = 1
-    #     else:
-    #         raise ValueError(
-    #             "the input account does not match either offerer or recipient")
+        if self.offer[0].itemType == ItemType.NATIVE or self.offer[
+                0].itemType == ItemType.ERC20:
+            if self.offer[0].itemType == ItemType.ERC20:
+                assert self.offer[0].token == weth, 'not pay in eth'
 
-    #     return coeff * self.get_deal_price()
+            if self.offerer == account:
+                # maybe could be removed in future
+                assert len(
+                    nft_consi
+                ) == 1, 'recipient receives nothing or more than one thing'
+
+                eth = -self.offer[0].amount / 10**18
+                nft_amount = nft_consi[0].amount
+                nft_address = nft_consi[0].token
+            else:
+                assert len(nft_consi) == 0, 'recipient receives something'
+                # maybe could be removed in future
+                assert len([
+                    consi for consi in self.consideration
+                    if consi.itemType == ItemType.NATIVE
+                ]) == 0, 'native eth transferred'
+
+                eth = (self.offer[0].amount - sum([
+                    consi.amount for consi in self.consideration
+                    if consi.itemType == ItemType.ERC20 and consi.token == weth
+                ])) / 10**18
+
+                nft_offer_consi = [
+                    consi for consi in self.consideration
+                    if consi.recipient == self.offerer
+                ]
+                # maybe could be removed in future
+                assert len(
+                    nft_offer_consi
+                ) == 1, 'recipient gives nothing or more than one thing'
+
+                nft_amount = nft_offer_consi[0].amount
+                nft_address = nft_offer_consi[0].token
+
+        elif self.offer[0].itemType == ItemType.ERC721:
+            nft_amount = self.offer[0].amount
+            nft_address = self.offer[0].token
+
+            if self.offerer == account:
+                # maybe could be removed in future
+                assert len(
+                    nft_consi
+                ) == 1, 'recipient receives nothing or more than one thing'
+
+                eth = nft_consi[0].amount / 10**18
+            else:
+                # maybe could be removed in future
+                assert len(
+                    nft_consi
+                ) == 0, 'recipient should receive nothing when gives eth'
+
+                eth = -sum([consi.amount
+                            for consi in self.consideration]) / 10**18
+
+        else:
+            raise ValueError(f'the itemType is f{self.offer[0].itemType}')
+
+        return {
+            'eth': eth,
+            'nft_amount': nft_amount,
+            'nft_address': nft_address
+        }
 
     def __repr__(self):
         return str({
@@ -153,38 +201,3 @@ class OrderFulfilledEvent():
             'offer': self.offer,
             'consideration': self.consideration
         })
-
-
-def get_deal_price_from_seaport_tx(seaport_tx: TxData) -> float:
-    if 'hash' in seaport_tx:
-        logs = pd.DataFrame(
-            w3.eth.get_transaction_receipt(seaport_tx['hash'])['logs'])
-
-        for _, log in logs.iterrows():
-            if log['topics'][0].hex() == OrderFulfilled_event_sig:
-                return OrderFulfilledEvent(topics=log['topics'],
-                                           data=log['data']).get_deal_price()
-
-        raise Exception("This transaction does not have OrderFulfilled event")
-
-    raise Exception("This transaction does not have hash")
-
-
-# def get_nft_ath(nft_addr: ChecksumAddress) -> float:
-#     with CompleteGetter() as txs_getter:
-#         txs = txs_getter.get_all(address=nft_addr)
-
-#     with LogsGetter() as logs_getter:
-#         logs = logs_getter.get_token_logs(nft_addr)
-
-#     exterier_logs = logs.loc[~logs['transactionHash'].isin(txs['hash'])]
-
-#     nft_txs = []
-#     for hash in tqdm(exterier_logs['transactionHash']):
-#         tx = w3.eth.get_transaction(hash)
-#         nft_txs.append(tx)
-#     # nft_txs = pd.DataFrame(nft_txs)
-#     # seaport_txs = nft_txs.loc[nft_txs['to'] == seaport_addr]
-
-#     # return seaport_txs
-#     return 1
