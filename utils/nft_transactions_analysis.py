@@ -4,7 +4,7 @@ from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
 from eth_typing.encoding import HexStr
 from eth_typing.evm import HexAddress, Address
 import pandas as pd
-import datetime
+import datetime, time
 from tqdm import tqdm
 from tenacity import retry
 from tenacity.wait import wait_random
@@ -56,21 +56,28 @@ def get_transfer_balance(account: HexAddress | Address, transfer: Transfer):
        wait=wait_random(min=1, max=1.5),
        reraise=True)
 def account_nft_transactions(account: HexAddress | Address):
-    with CompleteGetter() as getter:
-        nft_transfers = getter.get_all(account, 'tokennfttx')
+    result = pd.DataFrame([])
+    for _ in range(3):
+        with CompleteGetter() as getter:
+            nft_transfers = getter.get_all(account, 'tokennfttx')
 
-    if nft_transfers.empty:
-        return nft_transfers
+        if nft_transfers.empty:
+            time.sleep(1.5)
+            continue
+        else:
+            balances = []
+            nft_transfers_in_30days = nft_transfers.loc[nft_transfers[
+                'timeStamp'].map(lambda x: datetime.date.fromtimestamp(int(
+                    x)) > datetime.date.today() - datetime.timedelta(days=30))]
 
-    balances = []
-    nft_transfers_in_30days = nft_transfers.loc[
-        nft_transfers['timeStamp'].map(lambda x: datetime.date.fromtimestamp(
-            int(x)) > datetime.date.today() - datetime.timedelta(days=30))]
+            print('get account nft balances')
+            nft_transfers_in_30days_ = [
+                t for t in nft_transfers_in_30days.iterrows()
+            ]
+            for _, transfer in tqdm(nft_transfers_in_30days_):
+                balances.append(
+                    get_transfer_balance(account, cast(Transfer, transfer)))
 
-    print('get account nft balances')
-    nft_transfers_in_30days_ = [t for t in nft_transfers_in_30days.iterrows()]
-    for _, transfer in tqdm(nft_transfers_in_30days_):
-        balances.append(get_transfer_balance(account, cast(Transfer,
-                                                           transfer)))
-
-    return pd.concat(balances, ignore_index=True)
+            result = pd.concat(balances, ignore_index=True)
+            break
+    return result
