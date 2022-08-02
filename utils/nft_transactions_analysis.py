@@ -1,6 +1,7 @@
 from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
 from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
+from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance
 from eth_typing.encoding import HexStr
 from eth_typing.evm import HexAddress, Address
 import pandas as pd
@@ -10,6 +11,8 @@ from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
 from typing import cast, TypedDict
+
+# TODO: !!!!!!! multiple transfers are related to one transaction, something is replicated!!!!
 
 Transfer = TypedDict(
     'Transfer', {
@@ -30,6 +33,7 @@ def get_transfer_balance(account: HexAddress | Address, transfer: Transfer):
 
     receipt = w3.eth.get_transaction_receipt(transfer['hash'])
 
+    # process seaport trades
     OrderFulfilled_events = [
         OrderFulfilledEvent(log['topics'], log['data'])
         for log in receipt['logs']
@@ -49,7 +53,32 @@ def get_transfer_balance(account: HexAddress | Address, transfer: Transfer):
         } for b in OrderFulfilled_events
          if b.offerer == account or b.recipient == account])
 
-    return order_fulfilled_balances
+    # process x2y2 trades
+    ev_inventory_events = [
+        EvInventoryEvent(r['args'])
+        for r in x2y2_contract.events.EvInventory().processReceipt(receipt)
+    ]
+
+    ev_profit_events = x2y2_contract.events.EvProfit().processReceipt(receipt)
+    assert len(ev_profit_events) == len(
+        ev_inventory_events
+    ), 'ev_profit_events do not match with ev_inventory_events'
+
+    x2y2_balances = pd.DataFrame([{
+        **get_x2y2_tx_balance(b, [
+            r['args'] for r in ev_profit_events if r['args']['itemHash'] == b.detail['itemHash']
+        ][0], account),
+        'nft_name':
+        transfer['tokenName'],
+        'time':
+        datetime.datetime.fromtimestamp(int(
+            transfer['timeStamp'])).strftime('%Y-%m-%d %H:%M:%S'),
+        'tx_hash':
+        transfer['hash'],
+    } for b in ev_inventory_events])
+
+    return pd.concat([order_fulfilled_balances, x2y2_balances],
+                     ignore_index=True)
 
 
 @retry(stop=stop_after_attempt(3),
