@@ -1,59 +1,44 @@
 from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
-from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
-from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance
+from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent, seaport_addr
+from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance, x2y2_addr
 from eth_typing.encoding import HexStr
 from eth_typing.evm import HexAddress, Address
+from web3.types import TxReceipt
 import pandas as pd
 import datetime, time
 from tqdm import tqdm
 from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
-from typing import cast, TypedDict
+from typing import cast, TypedDict, List
 
-# TODO: !!!!!!! multiple transfers are related to one transaction, something is replicated!!!!
-
-Transfer = TypedDict(
-    'Transfer', {
-        'timeStamp': int,
-        'hash': HexStr,
-        'from': HexAddress,
-        'contractAddress': HexAddress,
-        'to': HexAddress,
-        'tokenName': str
-    })
+looksrare_addr = cast(HexAddress, '0x59728544B08AB483533076417FbBB2fD0B17CE3a')
 
 
-def get_transfer_balance(account: HexAddress | Address, transfer: Transfer):
-    if isinstance(account, bytes):
-        account = cast(HexAddress, account.hex().lower())
-    else:
-        account = cast(HexAddress, account.lower())
-
-    receipt = w3.eth.get_transaction_receipt(transfer['hash'])
-
-    # process seaport trades
+def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt,
+                               hash: HexStr, token_name: str, timeStamp: int):
     OrderFulfilled_events = [
         OrderFulfilledEvent(log['topics'], log['data'])
         for log in receipt['logs']
         if log['topics'][0] == OrderFulfilled_event_sig
     ]
 
-    order_fulfilled_balances = pd.DataFrame(
-        [{
-            **b.get_deal_balance(account),
-            'nft_name':
-            transfer['tokenName'],
-            'time':
-            datetime.datetime.fromtimestamp(int(
-                transfer['timeStamp'])).strftime('%Y-%m-%d %H:%M:%S'),
-            'tx_hash':
-            transfer['hash'],
-        } for b in OrderFulfilled_events
-         if b.offerer == account or b.recipient == account])
+    return pd.DataFrame([{
+        **b.get_deal_balance(account),
+        'nft_name':
+        token_name,
+        'time':
+        datetime.datetime.fromtimestamp(timeStamp).strftime(
+            '%Y-%m-%d %H:%M:%S'),
+        'tx_hash':
+        hash,
+    } for b in OrderFulfilled_events
+                         if b.offerer == account or b.recipient == account])
 
-    # process x2y2 trades
+
+def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
+                            hash: HexStr, token_name: str, timeStamp: int):
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
         for r in x2y2_contract.events.EvInventory().processReceipt(receipt)
@@ -64,27 +49,29 @@ def get_transfer_balance(account: HexAddress | Address, transfer: Transfer):
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
 
-    x2y2_balances = pd.DataFrame([{
+    return pd.DataFrame([{
         **get_x2y2_tx_balance(b, [
             r['args'] for r in ev_profit_events if r['args']['itemHash'] == b.detail['itemHash']
         ][0], account),
         'nft_name':
-        transfer['tokenName'],
+        token_name,
         'time':
-        datetime.datetime.fromtimestamp(int(
-            transfer['timeStamp'])).strftime('%Y-%m-%d %H:%M:%S'),
+        datetime.datetime.fromtimestamp(timeStamp).strftime(
+            '%Y-%m-%d %H:%M:%S'),
         'tx_hash':
-        transfer['hash'],
+        hash,
     } for b in ev_inventory_events])
-
-    return pd.concat([order_fulfilled_balances, x2y2_balances],
-                     ignore_index=True)
 
 
 @retry(stop=stop_after_attempt(3),
        wait=wait_random(min=1, max=1.5),
        reraise=True)
 def account_nft_transactions(account: HexAddress | Address):
+    if isinstance(account, bytes):
+        account = cast(HexAddress, account.hex().lower())
+    else:
+        account = cast(HexAddress, account.lower())
+
     result = pd.DataFrame([])
     for _ in range(3):
         with CompleteGetter() as getter:
@@ -94,19 +81,39 @@ def account_nft_transactions(account: HexAddress | Address):
             time.sleep(1.5)
             continue
         else:
-            balances = []
             nft_transfers_in_30days = nft_transfers.loc[nft_transfers[
                 'timeStamp'].map(lambda x: datetime.date.fromtimestamp(int(
                     x)) > datetime.date.today() - datetime.timedelta(days=30))]
 
             print('get account nft balances')
-            nft_transfers_in_30days_ = [
-                t for t in nft_transfers_in_30days.iterrows()
-            ]
-            for _, transfer in tqdm(nft_transfers_in_30days_):
-                balances.append(
-                    get_transfer_balance(account, cast(Transfer, transfer)))
+            balances = []
+            for hash in tqdm(
+                    nft_transfers_in_30days['hash'].drop_duplicates()):
 
-            result = pd.concat(balances, ignore_index=True)
-            break
+                receipt = w3.eth.get_transaction_receipt(hash)
+
+                if receipt['to'] == seaport_addr or receipt[
+                        'to'] == x2y2_addr or receipt['to'] == looksrare_addr:
+
+                    assert cast(
+                        pd.DataFrame, nft_transfers_in_30days.loc[
+                            nft_transfers_in_30days['hash'] == hash,
+                            'tokenName']).nunique(
+                            ) == 1, 'more than one nft collection is traded'
+
+                    tokenName, timeStamp = nft_transfers_in_30days.loc[
+                        nft_transfers_in_30days['hash'] == hash].iloc[0][[
+                            'tokenName', 'timeStamp'
+                        ]]
+
+                    balances.append(
+                        get_OrderFulfilled_balance(account, receipt, hash,
+                                                   tokenName, int(timeStamp)))
+
+                    balances.append(
+                        get_EvInventory_balance(account, receipt, hash,
+                                                tokenName, int(timeStamp)))
+
+        result = pd.concat(balances, ignore_index=True)
+        break
     return result
