@@ -135,7 +135,7 @@ def get_x2y2_tx_balance(ev_inventory: EvInventoryEvent,
     assert ev_inventory.detail['itemHash'] == ev_profit[
         'itemHash'], 'itemHash does not match'
 
-    if ev_profit['to'].lower() == account:
+    if ev_profit['to'].lower() == account.lower():
         return {
             'eth': ev_profit['amount'] / 10**18,
             'nft_address': ev_inventory.item['data']['token'],
