@@ -17,7 +17,7 @@ looksrare_addr = cast(HexAddress, '0x59728544B08AB483533076417FbBB2fD0B17CE3a')
 
 
 def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt,
-                               hash: HexStr, token_name: str, timeStamp: int):
+                               token_name: str, timeStamp: int):
     OrderFulfilled_events = [
         OrderFulfilledEvent(log['topics'], log['data'])
         for log in receipt['logs']
@@ -32,13 +32,13 @@ def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt,
         datetime.datetime.fromtimestamp(timeStamp).strftime(
             '%Y-%m-%d %H:%M:%S'),
         'tx_hash':
-        hash,
+        receipt['transactionHash'],
     } for b in OrderFulfilled_events
                          if b.offerer == account or b.recipient == account])
 
 
 def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
-                            hash: HexStr, token_name: str, timeStamp: int,
+                            token_name: str, timeStamp: int,
                             tokenIds: set[int]):
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
@@ -61,7 +61,7 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
         datetime.datetime.fromtimestamp(timeStamp).strftime(
             '%Y-%m-%d %H:%M:%S'),
         'tx_hash':
-        hash,
+        receipt['transactionHash'],
     } for b in ev_inventory_events
                          if b.item['data']['identifier'] in tokenIds])
 
@@ -113,11 +113,11 @@ def account_nft_transactions(account: HexAddress | Address):
                 balances_length = len(balances)
 
                 balances.append(
-                    get_OrderFulfilled_balance(account, receipt, hash,
-                                               tokenName, int(timeStamp)))
+                    get_OrderFulfilled_balance(account, receipt, tokenName,
+                                               int(timeStamp)))
 
                 balances.append(
-                    get_EvInventory_balance(account, receipt, hash, tokenName,
+                    get_EvInventory_balance(account, receipt, tokenName,
                                             int(timeStamp), tokenIds))
 
                 tokenName_length = cast(
