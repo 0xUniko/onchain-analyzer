@@ -1,7 +1,7 @@
 from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
-from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent, seaport_addr
-from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance, x2y2_addr
+from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
+from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance
 from eth_typing.encoding import HexStr
 from eth_typing.evm import HexAddress, Address
 from web3.types import TxReceipt
@@ -11,7 +11,7 @@ from tqdm import tqdm
 from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
-from typing import cast, TypedDict, List
+from typing import cast
 
 looksrare_addr = cast(HexAddress, '0x59728544B08AB483533076417FbBB2fD0B17CE3a')
 
@@ -38,13 +38,15 @@ def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt,
 
 
 def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
-                            hash: HexStr, token_name: str, timeStamp: int):
+                            hash: HexStr, token_name: str, timeStamp: int,
+                            tokenIds: set[int]):
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
         for r in x2y2_contract.events.EvInventory().processReceipt(receipt)
     ]
 
     ev_profit_events = x2y2_contract.events.EvProfit().processReceipt(receipt)
+
     assert len(ev_profit_events) == len(
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
@@ -60,7 +62,14 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
             '%Y-%m-%d %H:%M:%S'),
         'tx_hash':
         hash,
-    } for b in ev_inventory_events])
+    } for b in ev_inventory_events
+                         if b.item['data']['identifier'] in tokenIds])
+
+
+# def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
+#                                   hash: HexStr, token_name: str,
+#                                   timeStamp: int):
+#     pass
 
 
 @retry(stop=stop_after_attempt(3),
@@ -92,27 +101,33 @@ def account_nft_transactions(account: HexAddress | Address):
 
                 receipt = w3.eth.get_transaction_receipt(hash)
 
-                if receipt['to'] == seaport_addr or receipt[
-                        'to'] == x2y2_addr or receipt['to'] == looksrare_addr:
+                transfers = nft_transfers_in_30days.loc[
+                    nft_transfers_in_30days['hash'] == hash]
 
-                    assert cast(
-                        pd.DataFrame, nft_transfers_in_30days.loc[
-                            nft_transfers_in_30days['hash'] == hash,
-                            'tokenName']).nunique(
-                            ) == 1, 'more than one nft collection is traded'
+                tokenIds = set(transfers['tokenId'])
 
-                    tokenName, timeStamp = nft_transfers_in_30days.loc[
-                        nft_transfers_in_30days['hash'] == hash].iloc[0][[
-                            'tokenName', 'timeStamp'
-                        ]]
+                tokenName, timeStamp = transfers.iloc[0][[
+                    'tokenName', 'timeStamp'
+                ]]
 
-                    balances.append(
-                        get_OrderFulfilled_balance(account, receipt, hash,
-                                                   tokenName, int(timeStamp)))
+                balances_length = len(balances)
 
-                    balances.append(
-                        get_EvInventory_balance(account, receipt, hash,
-                                                tokenName, int(timeStamp)))
+                balances.append(
+                    get_OrderFulfilled_balance(account, receipt, hash,
+                                               tokenName, int(timeStamp)))
+
+                balances.append(
+                    get_EvInventory_balance(account, receipt, hash, tokenName,
+                                            int(timeStamp), tokenIds))
+
+                tokenName_length = cast(
+                    pd.DataFrame, nft_transfers_in_30days.loc[
+                        nft_transfers_in_30days['hash'] == hash,
+                        'tokenName']).nunique()
+
+                assert (
+                    tokenName_length > 1 and balances_length == len(balances)
+                ) or tokenName_length == 1, 'more than one nft collection is traded'
 
         result = pd.concat(balances, ignore_index=True)
         break
