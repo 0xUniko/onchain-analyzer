@@ -135,6 +135,9 @@ def get_x2y2_tx_balance(ev_inventory: EvInventoryEvent,
     assert ev_inventory.detail['itemHash'] == ev_profit[
         'itemHash'], 'itemHash does not match'
 
+    assert ev_inventory.detail[
+        'op'] == Op.COMPLETE_SELL_OFFER, 'not COMPLETE_SELL_OFFER'
+
     if ev_profit['to'].lower() == account.lower():
         return {
             'eth': ev_profit['amount'] / 10**18,
