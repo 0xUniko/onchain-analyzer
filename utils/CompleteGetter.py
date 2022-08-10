@@ -20,7 +20,7 @@ class CompleteGetter():
 
     def get_all(self, address: HexAddress | Address,
                 action: Literal['txlist'] | Literal['tokennfttx']):
-        print(f'get all txs from {address}')
+        print(f'get all {action} from {address}')
         new_txs_collector = []
         startblock = 1
 
