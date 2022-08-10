@@ -13,8 +13,6 @@ from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
 from typing import cast
 
-looksrare_addr = cast(HexAddress, '0x59728544B08AB483533076417FbBB2fD0B17CE3a')
-
 
 def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
     OrderFulfilled_events = [
@@ -41,6 +39,10 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
     assert len(ev_profit_events) == len(
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
+
+    assert pd.Series([
+        t.item['data']['token'] for t in ev_inventory_events
+    ]).nunique() == 1, 'more than one nft collections are traded in this tx'
 
     def find_the_corresponding_profit_event(
             itemHash: HexBytes) -> EvProfitDict:
