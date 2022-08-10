@@ -109,7 +109,7 @@ def account_nft_transactions(account: HexAddress | Address):
                 transfers = nft_transfers_in_30days.loc[
                     nft_transfers_in_30days['hash'] == hash]
 
-                tokenIds = set(transfers['tokenId'])
+                tokenIds = set(transfers['tokenID'])
 
                 tokenName, timeStamp = transfers.iloc[0][[
                     'tokenName', 'timeStamp'
