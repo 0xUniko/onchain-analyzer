@@ -2,7 +2,7 @@ from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
 from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
 from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance
-from eth_typing.encoding import HexStr
+from hexbytes import HexBytes
 from eth_typing.evm import HexAddress, Address
 from web3.types import TxReceipt
 import pandas as pd
@@ -16,29 +16,20 @@ from typing import cast
 looksrare_addr = cast(HexAddress, '0x59728544B08AB483533076417FbBB2fD0B17CE3a')
 
 
-def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt,
-                               token_name: str, timeStamp: int):
+def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
     OrderFulfilled_events = [
         OrderFulfilledEvent(log['topics'], log['data'])
         for log in receipt['logs']
         if log['topics'][0] == OrderFulfilled_event_sig
     ]
 
-    return pd.DataFrame([{
-        **b.get_deal_balance(account),
-        'nft_name':
-        token_name,
-        'time':
-        datetime.datetime.fromtimestamp(timeStamp).strftime(
-            '%Y-%m-%d %H:%M:%S'),
-        'tx_hash':
-        receipt['transactionHash'],
-    } for b in OrderFulfilled_events
-                         if b.offerer == account or b.recipient == account])
+    return pd.DataFrame([
+        b.get_deal_balance(account) for b in OrderFulfilled_events
+        if b.offerer == account or b.recipient == account
+    ])
 
 
 def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
-                            token_name: str, timeStamp: int,
                             tokenIds: set[int]):
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
@@ -51,25 +42,28 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
 
-    return pd.DataFrame([{
-        **get_x2y2_tx_balance(b, [
-            r['args'] for r in ev_profit_events if r['args']['itemHash'] == b.detail['itemHash']
-        ][0], account),
-        'nft_name':
-        token_name,
-        'time':
-        datetime.datetime.fromtimestamp(timeStamp).strftime(
-            '%Y-%m-%d %H:%M:%S'),
-        'tx_hash':
-        receipt['transactionHash'],
-    } for b in ev_inventory_events
-                         if b.item['data']['identifier'] in tokenIds])
+    return pd.DataFrame([
+        get_x2y2_tx_balance(b, [
+            r['args'] for r in ev_profit_events
+            if r['args']['itemHash'] == b.detail['itemHash']
+        ][0], account) for b in ev_inventory_events
+        if b.item['data']['identifier'] in tokenIds
+    ])
 
 
 # def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
 #                                   hash: HexStr, token_name: str,
 #                                   timeStamp: int):
 #     pass
+
+
+def add_nftname_time_hash(df: pd.DataFrame, token_name: str, timeStamp: int,
+                          hash: HexBytes):
+    df['nft_name'] = token_name
+    df['time'] = datetime.datetime.fromtimestamp(timeStamp).strftime(
+        '%Y-%m-%d %H:%M:%S')
+    df['tx_hash'] = hash
+    return df
 
 
 @retry(stop=stop_after_attempt(3),
@@ -113,12 +107,14 @@ def account_nft_transactions(account: HexAddress | Address):
                 balances_length = len(balances)
 
                 balances.append(
-                    get_OrderFulfilled_balance(account, receipt, tokenName,
-                                               int(timeStamp)))
+                    add_nftname_time_hash(
+                        get_OrderFulfilled_balance(account, receipt),
+                        tokenName, int(timeStamp), receipt['transactionHash']))
 
                 balances.append(
-                    get_EvInventory_balance(account, receipt, tokenName,
-                                            int(timeStamp), tokenIds))
+                    add_nftname_time_hash(
+                        get_EvInventory_balance(account, receipt, tokenIds),
+                        tokenName, int(timeStamp), receipt['transactionHash']))
 
                 tokenName_length = cast(
                     pd.DataFrame, nft_transfers_in_30days.loc[
