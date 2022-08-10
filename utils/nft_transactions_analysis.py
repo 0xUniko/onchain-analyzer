@@ -1,7 +1,7 @@
 from utils.Scanner import w3
 from utils.CompleteGetter import CompleteGetter
 from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
-from utils.x2y2_utils import EvInventoryEvent, x2y2_contract, get_x2y2_tx_balance
+from utils.x2y2_utils import EvInventoryEvent, EvProfitDict, x2y2_contract, get_x2y2_tx_balance
 from hexbytes import HexBytes
 from eth_typing.evm import HexAddress, Address
 from web3.types import TxReceipt
@@ -42,11 +42,22 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
 
-    return pd.DataFrame([
-        get_x2y2_tx_balance(b, [
+    def find_the_corresponding_profit_event(
+            itemHash: HexBytes) -> EvProfitDict:
+        corresponding_profit_events = [
             r['args'] for r in ev_profit_events
-            if r['args']['itemHash'] == b.detail['itemHash']
-        ][0], account) for b in ev_inventory_events
+            if r['args']['itemHash'] == itemHash
+        ]
+
+        assert len(corresponding_profit_events
+                   ) == 1, 'found multiple corresponding events'
+
+        return corresponding_profit_events[0]
+
+    return pd.DataFrame([
+        get_x2y2_tx_balance(
+            b, find_the_corresponding_profit_event(b.detail['itemHash']),
+            account) for b in ev_inventory_events
         if b.item['data']['identifier'] in tokenIds
     ])
 
