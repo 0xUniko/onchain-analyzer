@@ -45,7 +45,7 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
 
     assert pd.Series([
         t.item['data']['token'] for t in ev_inventory_events
-    ]).nunique() == 1, 'more than one nft collections are traded in this tx'
+    ]).nunique() <= 1, 'more than one nft collections are traded in this tx'
 
     def find_the_corresponding_profit_event(
             itemHash: HexBytes) -> EvProfitDict:
@@ -152,6 +152,8 @@ def account_nft_transactions(account: HexAddress | Address):
             balances = []
             for hash in tqdm(
                     nft_transfers_in_30days['hash'].drop_duplicates()):
+
+                # print(hash)
 
                 receipt = w3.eth.get_transaction_receipt(hash)
 
