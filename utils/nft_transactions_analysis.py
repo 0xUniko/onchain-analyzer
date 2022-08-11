@@ -5,6 +5,7 @@ from utils.x2y2_utils import EvInventoryEvent, EvProfitDict, x2y2_contract, get_
 from hexbytes import HexBytes
 from eth_typing.evm import HexAddress, Address, ChecksumAddress
 from web3.types import TxReceipt
+from web3._utils.events import EventLogErrorFlags
 import pandas as pd
 import datetime, time
 from tqdm import tqdm
@@ -34,10 +35,12 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
                             tokenIds: set[int]):
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
-        for r in x2y2_contract.events.EvInventory().processReceipt(receipt)
+        for r in x2y2_contract.events.EvInventory().processReceipt(
+            receipt, errors=EventLogErrorFlags.Ignore)
     ]
 
-    ev_profit_events = x2y2_contract.events.EvProfit().processReceipt(receipt)
+    ev_profit_events = x2y2_contract.events.EvProfit().processReceipt(
+        receipt, errors=EventLogErrorFlags.Ignore)
 
     assert len(ev_profit_events) == len(
         ev_inventory_events
@@ -69,10 +72,12 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
 
 def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
                                   tokenIds: set[int]):
-    taker_ask = looksrare_contract.events.TakerAsk().processReceipt(receipt)
-    taker_bid = looksrare_contract.events.TakerBid().processReceipt(receipt)
+    taker_ask = looksrare_contract.events.TakerAsk().processReceipt(
+        receipt, errors=EventLogErrorFlags.Ignore)
+    taker_bid = looksrare_contract.events.TakerBid().processReceipt(
+        receipt, errors=EventLogErrorFlags.Ignore)
     royalty_payment = looksrare_contract.events.RoyaltyPayment(
-    ).processReceipt(receipt)
+    ).processReceipt(receipt, errors=EventLogErrorFlags.Ignore)
 
     assert not (taker_bid != () and taker_ask !=
                 ()), 'both TakerAsk and TakerBid event are non-empty'
