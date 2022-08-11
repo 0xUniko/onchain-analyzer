@@ -36,11 +36,11 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
     ev_inventory_events = [
         EvInventoryEvent(r['args'])
         for r in x2y2_contract.events.EvInventory().processReceipt(
-            receipt, errors=EventLogErrorFlags.Ignore)
+            receipt, errors=EventLogErrorFlags.Discard)
     ]
 
     ev_profit_events = x2y2_contract.events.EvProfit().processReceipt(
-        receipt, errors=EventLogErrorFlags.Ignore)
+        receipt, errors=EventLogErrorFlags.Discard)
 
     assert len(ev_profit_events) == len(
         ev_inventory_events
@@ -73,11 +73,11 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
 def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
                                   tokenIds: set[int]):
     taker_ask = looksrare_contract.events.TakerAsk().processReceipt(
-        receipt, errors=EventLogErrorFlags.Ignore)
+        receipt, errors=EventLogErrorFlags.Discard)
     taker_bid = looksrare_contract.events.TakerBid().processReceipt(
-        receipt, errors=EventLogErrorFlags.Ignore)
+        receipt, errors=EventLogErrorFlags.Discard)
     royalty_payment = looksrare_contract.events.RoyaltyPayment(
-    ).processReceipt(receipt, errors=EventLogErrorFlags.Ignore)
+    ).processReceipt(receipt, errors=EventLogErrorFlags.Discard)
 
     assert not (taker_bid != () and taker_ask !=
                 ()), 'both TakerAsk and TakerBid event are non-empty'
