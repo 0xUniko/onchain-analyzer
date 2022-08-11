@@ -3,7 +3,7 @@ from utils.CompleteGetter import CompleteGetter
 from utils.seaport_utils import OrderFulfilled_event_sig, OrderFulfilledEvent
 from utils.x2y2_utils import EvInventoryEvent, EvProfitDict, x2y2_contract, get_x2y2_tx_balance
 from hexbytes import HexBytes
-from eth_typing.evm import HexAddress, Address
+from eth_typing.evm import HexAddress, Address, ChecksumAddress
 from web3.types import TxReceipt
 import pandas as pd
 import datetime, time
@@ -12,6 +12,9 @@ from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
 from typing import cast
+
+weth = cast(ChecksumAddress, '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+from utils.looksrare_utils import LoyaltyPaymentDict, get_taker_balance, TakerType, looksrare_contract
 
 
 def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
@@ -64,10 +67,54 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
     ])
 
 
-# def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
-#                                   hash: HexStr, token_name: str,
-#                                   timeStamp: int):
-#     pass
+def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
+                                  tokenIds: set[int]):
+    taker_ask = looksrare_contract.events.TakerAsk().processReceipt(receipt)
+    taker_bid = looksrare_contract.events.TakerBid().processReceipt(receipt)
+    royalty_payment = looksrare_contract.events.RoyaltyPayment(
+    ).processReceipt(receipt)
+
+    assert not (taker_bid != () and taker_ask !=
+                ()), 'both TakerAsk and TakerBid event are non-empty'
+
+    assert all([b['args']['currency'] == weth
+                for b in royalty_payment]), 'royalty not paid in eth'
+
+    def find_the_corresponding_royalty_payment(
+            collection: ChecksumAddress,
+            tokenId: int) -> LoyaltyPaymentDict | None:
+
+        corresponding_payments = [
+            pay for pay in royalty_payment['args']
+            if pay['collection'] == collection and pay['tokenId'] == tokenId
+        ]
+
+        assert len(corresponding_payments
+                   ) <= 1, 'found multiple corresponding payments'
+
+        if len(corresponding_payments) == 1:
+            return corresponding_payments[0]
+        else:
+            return None
+
+    if taker_bid != ():
+        taker = [t['args'] for t in taker_bid]
+        taker_type = TakerType.taker_bid
+    else:
+        taker = [t['args'] for t in taker_ask]
+        taker_type = TakerType.taker_ask
+
+    assert pd.DataFrame(taker)['collection'].nunique() == 1 if len(
+        taker
+    ) > 0 else True, 'more than one nft collections are traded in this tx'
+
+    return pd.DataFrame([
+        get_taker_balance(
+            account, t,
+            find_the_corresponding_royalty_payment(t['collection'],
+                                                   t['tokenId']), taker_type)
+        for t in taker if t['tokenId'] in tokenIds
+    ])
 
 
 def add_nftname_time_hash(df: pd.DataFrame, token_name: str, timeStamp: int,
@@ -128,6 +175,12 @@ def account_nft_transactions(account: HexAddress | Address):
                     add_nftname_time_hash(
                         get_EvInventory_balance(account, receipt, tokenIds),
                         tokenName, int(timeStamp), receipt['transactionHash']))
+
+                balances.append(
+                    add_nftname_time_hash(
+                        get_TakerBid_TakerAsk_balance(account, receipt,
+                                                      tokenIds), tokenName,
+                        int(timeStamp), receipt['transactionHash']))
 
                 tokenName_length = cast(
                     pd.DataFrame, nft_transfers_in_30days.loc[
