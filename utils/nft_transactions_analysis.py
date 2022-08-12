@@ -122,13 +122,29 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
     ])
 
 
-def add_nftname_time_hash(df: pd.DataFrame, token_name: str, timeStamp: int,
-                          hash: HexBytes):
-    df['nft_name'] = token_name
-    df['time'] = datetime.datetime.fromtimestamp(timeStamp).strftime(
-        '%Y-%m-%d %H:%M:%S')
-    df['tx_hash'] = hash
-    return df
+def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
+    if df.empty:
+        return df
+    else:
+        df['nft_address'] = df['nft_address'].map(lambda x: x.lower())
+
+        df = pd.merge(
+            df,
+            transfers.rename(columns={
+                'contractAddress': 'nft_address',
+                'tokenName': 'nft_name'
+            })[['nft_address', 'nft_name']],
+            how='left',
+            on='nft_address')
+
+        assert df['nft_name'].notnull().all(), 'not all names are assigned'
+
+        df['time'] = datetime.datetime.fromtimestamp(
+            int(transfers['timeStamp'].iloc[0])).strftime('%Y-%m-%d %H:%M:%S')
+
+        df['tx_hash'] = transfers['hash'].iloc[0]
+
+        return df
 
 
 @retry(stop=stop_after_attempt(3),
@@ -167,36 +183,20 @@ def account_nft_transactions(account: HexAddress | Address):
 
                 tokenIds = set(transfers['tokenID'])
 
-                tokenName, timeStamp = transfers.iloc[0][[
-                    'tokenName', 'timeStamp'
-                ]]
-
-                balances_length = len(balances)
-
                 balances.append(
                     add_nftname_time_hash(
                         get_OrderFulfilled_balance(account, receipt),
-                        tokenName, int(timeStamp), receipt['transactionHash']))
+                        transfers))
 
                 balances.append(
                     add_nftname_time_hash(
                         get_EvInventory_balance(account, receipt, tokenIds),
-                        tokenName, int(timeStamp), receipt['transactionHash']))
+                        transfers))
 
                 balances.append(
                     add_nftname_time_hash(
                         get_TakerBid_TakerAsk_balance(account, receipt,
-                                                      tokenIds), tokenName,
-                        int(timeStamp), receipt['transactionHash']))
-
-                tokenName_length = cast(
-                    pd.DataFrame, nft_transfers_in_30days.loc[
-                        nft_transfers_in_30days['hash'] == hash,
-                        'tokenName']).nunique()
-
-                assert (
-                    tokenName_length > 1 and balances_length == len(balances)
-                ) or tokenName_length == 1, 'more than one nft collection is traded'
+                                                      tokenIds), transfers))
 
         result = pd.concat(balances, ignore_index=True)
         break
