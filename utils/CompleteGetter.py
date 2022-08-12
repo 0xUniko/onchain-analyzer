@@ -18,11 +18,22 @@ class CompleteGetter():
         self.scanner.__exit__(exc_type, exc_value, trace)
         return False
 
-    def get_all(self, address: HexAddress | Address,
-                action: Literal['txlist'] | Literal['tokennfttx']):
+    def get_all(self,
+                address: HexAddress | Address,
+                action: Literal['txlist'] | Literal['tokennfttx'],
+                start_time: int | None = None):
         print(f'get all {action} from {address}')
+
         new_txs_collector = []
-        startblock = 1
+
+        if start_time is not None:
+            with Scanner() as scanner:
+                startblock = scanner.scan('block',
+                                          'getblocknobytime',
+                                          timestamp=start_time,
+                                          closest='after')
+        else:
+            startblock = 1
 
         if isinstance(address, bytes):
             addr = address.hex()
