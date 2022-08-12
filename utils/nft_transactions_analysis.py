@@ -12,10 +12,10 @@ from tqdm import tqdm
 from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
-from typing import cast
+from typing import cast, List
 
 weth = cast(ChecksumAddress, '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
-from utils.looksrare_utils import LoyaltyPaymentDict, get_taker_balance, TakerType, looksrare_contract
+from utils.looksrare_utils import LoyaltyPaymentDict, get_taker_balance, TakerType, looksrare_contract, TakerEvent
 
 
 def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
@@ -98,7 +98,8 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
             b, find_the_corresponding_profit_event(b.detail['itemHash']),
             account) for b in ev_inventory_events
         if any((transfers['contractAddress'] == b.item['data']['token'])
-               & (transfers['tokenID'] == b.item['data']['identifier']))
+               & (transfers['tokenID'].astype(int) == b.item['data']
+                  ['identifier']))
     ])
 
     return add_nftname_time_hash(balances, transfers)
@@ -137,10 +138,10 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
             return None
 
     if taker_bid != ():
-        taker = [t['args'] for t in taker_bid]
+        taker: List[TakerEvent] = [t['args'] for t in taker_bid]
         taker_type = TakerType.taker_bid
     else:
-        taker = [t['args'] for t in taker_ask]
+        taker: List[TakerEvent] = [t['args'] for t in taker_ask]
         taker_type = TakerType.taker_ask
 
     balances = pd.DataFrame([
@@ -150,7 +151,7 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
                                                    t['tokenId']), taker_type)
         for t in taker
         if any((transfers['contractAddress'] == t['collection'].lower())
-               & (transfers['tokenID'] == t['tokenId']))
+               & (transfers['tokenID'].astype(int) == t['tokenId']))
     ])
 
     return add_nftname_time_hash(balances, transfers)
@@ -184,8 +185,6 @@ def account_nft_transactions(account: HexAddress | Address,
             balances = []
             for hash in tqdm(
                     nft_transfers_in_30days['hash'].drop_duplicates()):
-
-                # print(hash)
 
                 receipt = w3.eth.get_transaction_receipt(hash)
 
