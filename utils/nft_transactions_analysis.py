@@ -150,7 +150,9 @@ def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
 @retry(stop=stop_after_attempt(3),
        wait=wait_random(min=1, max=1.5),
        reraise=True)
-def account_nft_transactions(account: HexAddress | Address):
+def account_nft_transactions(account: HexAddress | Address,
+                             start_time: int | None = None):
+
     if isinstance(account, bytes):
         account = cast(HexAddress, account.hex().lower())
     else:
@@ -159,7 +161,7 @@ def account_nft_transactions(account: HexAddress | Address):
     result = pd.DataFrame([])
     for _ in range(3):
         with CompleteGetter() as getter:
-            nft_transfers = getter.get_all(account, 'tokennfttx')
+            nft_transfers = getter.get_all(account, 'tokennfttx', start_time)
 
         if nft_transfers.empty:
             time.sleep(1.5)
