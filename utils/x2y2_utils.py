@@ -1,7 +1,6 @@
 from utils.Scanner import w3
 from utils.seaport_utils import DealBalance
 from eth_typing.evm import ChecksumAddress, HexAddress
-from eth_typing.encoding import HexStr
 from hexbytes import HexBytes
 import json
 from enum import IntEnum
@@ -29,19 +28,19 @@ EvCancel_event_sig = w3.keccak(
 
 
 class EvProfitDict(TypedDict):
-    itemHash: HexStr
-    currency: HexAddress
-    to: HexAddress
+    itemHash: HexBytes
+    currency: ChecksumAddress
+    to: ChecksumAddress
     amount: int
 
 
 class EvInventoryDict(TypedDict):
-    maker: HexAddress
-    taker: HexAddress
-    currency: HexAddress
+    maker: ChecksumAddress
+    taker: ChecksumAddress
+    currency: ChecksumAddress
     item: Tuple[int, bytes]
-    detail: Tuple[int, int, int, int, bytes, HexAddress, bytes, int, int, int,
-                  List[Tuple[int, HexAddress]]]
+    detail: Tuple[int, int, int, int, bytes, ChecksumAddress, bytes, int, int,
+                  int, List[Tuple[int, ChecksumAddress]]]
 
 
 class Op(IntEnum):
@@ -57,7 +56,7 @@ class Op(IntEnum):
 
 class Fee(TypedDict):
     percentage: float
-    to: HexAddress
+    to: ChecksumAddress
 
 
 class SettleDetail(TypedDict):
@@ -66,7 +65,7 @@ class SettleDetail(TypedDict):
     itemIdx: int
     price: float
     itemHash: HexBytes
-    executionDelegate: HexAddress
+    executionDelegate: ChecksumAddress
     dataReplacement: bytes
     bidIncentivePct: int
     aucMinIncrementPct: int
