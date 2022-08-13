@@ -77,10 +77,6 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
         ev_inventory_events
     ), 'ev_profit_events do not match with ev_inventory_events'
 
-    assert pd.Series([
-        t.item['data']['token'] for t in ev_inventory_events
-    ]).nunique() <= 1, 'more than one nft collections are traded in this tx'
-
     def find_the_corresponding_profit_event(
             itemHash: HexBytes) -> EvProfitDict:
         corresponding_profit_events = [
