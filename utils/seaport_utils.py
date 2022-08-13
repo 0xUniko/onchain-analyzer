@@ -2,10 +2,8 @@ from utils.Scanner import w3
 from utils.addr_trac_padding import addr_trac
 from eth_typing.evm import ChecksumAddress, HexAddress
 from eth_typing.encoding import HexStr
-from web3.types import TxData
 from hexbytes import HexBytes
 import pandas as pd
-from tqdm import tqdm
 import json
 from enum import IntEnum
 from typing import Sequence, cast, TypedDict
@@ -117,8 +115,8 @@ class OrderFulfilledEvent():
         '''
         assert self.offerer == account or self.recipient == account, "the input account does not match either offerer or recipient"
 
-        # could be removed in future
-        assert self.offer_length == 1, 'the amount of offer is more than one'
+        assert pd.Series([o.itemType for o in self.offer
+                          ]).nunique() == 1, "multiple itemTypes in offer"
 
         nft_consi = [
             consi for consi in self.consideration if consi.recipient == account
@@ -126,6 +124,8 @@ class OrderFulfilledEvent():
 
         if self.offer[0].itemType == ItemType.NATIVE or self.offer[
                 0].itemType == ItemType.ERC20:
+            assert self.offer_length == 1, 'the amount of offer in eth is more than one'
+
             if self.offer[0].itemType == ItemType.ERC20:
                 assert self.offer[0].token == weth, 'not pay in eth'
 
@@ -164,8 +164,12 @@ class OrderFulfilledEvent():
                 nft_address = nft_offer_consi[0].token
 
         elif self.offer[0].itemType == ItemType.ERC721:
-            nft_amount = self.offer[0].amount
+            assert pd.Series([
+                o.token for o in self.offer
+            ]).nunique() == 1, 'more than one collection are traded'
             nft_address = self.offer[0].token
+
+            nft_amount = sum([o.amount for o in self.offer])
 
             if self.offerer == account:
                 # maybe could be removed in future
