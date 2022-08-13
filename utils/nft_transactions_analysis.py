@@ -127,8 +127,9 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
             return None
 
         corresponding_payments = [
-            pay for pay in royalty_payment['args']
-            if pay['collection'] == collection and pay['tokenId'] == tokenId
+            pay['args'] for pay in royalty_payment
+            if pay['args']['collection'] == collection
+            and pay['args']['tokenId'] == tokenId
         ]
 
         assert len(corresponding_payments
