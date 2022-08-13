@@ -86,6 +86,8 @@ class DealBalance(TypedDict):
 class OrderFulfilledEvent():
 
     def __init__(self, topics: Sequence[HexBytes], data: HexStr):
+        assert topics[0] == OrderFulfilled_event_sig, 'not OrderFulfilledEvent'
+
         self.offerer = addr_trac(topics[1])
         self.zone = topics[2]
         data_hex = data[2:]
