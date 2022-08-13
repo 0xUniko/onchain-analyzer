@@ -130,13 +130,15 @@ class OrderFulfilledEvent():
                 assert self.offer[0].token == weth, 'not pay in eth'
 
             if self.offerer == account:
-                # maybe could be removed in future
-                assert len(
-                    nft_consi
-                ) == 1, 'recipient receives nothing or more than one thing'
+                assert all(
+                    pd.Series([consi.itemType for consi in nft_consi]) ==
+                    ItemType.ERC721), 'not all items are ERC721'
+
+                assert pd.Series([consi.token for consi in nft_consi]).nunique(
+                ) == 1, 'more than one collection in the consideration'
 
                 eth = -self.offer[0].amount / 10**18
-                nft_amount = nft_consi[0].amount
+                nft_amount = sum([consi.amount for consi in nft_consi])
                 nft_address = nft_consi[0].token
             else:
                 assert len(nft_consi) == 0, 'recipient receives something'
