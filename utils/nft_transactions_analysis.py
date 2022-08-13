@@ -123,6 +123,8 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
     def find_the_corresponding_royalty_payment(
             collection: ChecksumAddress,
             tokenId: int) -> LoyaltyPaymentDict | None:
+        if royalty_payment == ():
+            return None
 
         corresponding_payments = [
             pay for pay in royalty_payment['args']
@@ -185,6 +187,8 @@ def account_nft_transactions(account: HexAddress | Address,
             balances = []
             for hash in tqdm(
                     nft_transfers_in_30days['hash'].drop_duplicates()):
+
+                print(hash)
 
                 receipt = w3.eth.get_transaction_receipt(hash)
 
