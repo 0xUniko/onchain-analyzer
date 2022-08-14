@@ -128,9 +128,6 @@ class OrderFulfilledEvent():
                 0].itemType == ItemType.ERC20:
             assert self.offer_length == 1, 'the amount of offer in eth is more than one'
 
-            if self.offer[0].itemType == ItemType.ERC20:
-                assert self.offer[0].token == weth, 'not pay in eth'
-
             if self.offerer == account:
                 assert all(
                     pd.Series([consi.itemType for consi in nft_consi]) ==
@@ -166,6 +163,10 @@ class OrderFulfilledEvent():
 
                 nft_amount = nft_offer_consi[0].amount
                 nft_address = nft_offer_consi[0].token
+
+            if self.offer[0].itemType == ItemType.ERC20:
+                if self.offer[0].token != weth:
+                    eth = -999999
 
         elif self.offer[0].itemType == ItemType.ERC721:
             assert pd.Series([
