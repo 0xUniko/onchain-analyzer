@@ -115,6 +115,15 @@ class OrderFulfilledEvent():
         get the account deal balance from a OrderFulfilledEvent
         many limitations exist here and could be removed in future
         '''
+
+        # transaction 0x98a20b0b2a111b74a73d88b08ec9861c3eb3fcfcf081b130e27ada923cefb7fc is strange
+        if self.offerer == '0x0000000000000000000000000000000000000000' or self.recipient == '0x0000000000000000000000000000000000000000':
+            return {
+                'eth': -999999,
+                'nft_amount': 0,
+                'nft_address': cast(HexAddress, '')
+            }
+
         assert self.offerer == account or self.recipient == account, "the input account does not match either offerer or recipient"
 
         assert pd.Series([o.itemType for o in self.offer
