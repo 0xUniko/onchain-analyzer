@@ -27,7 +27,9 @@ def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
 
     return pd.DataFrame([
         b.get_deal_balance(account) for b in OrderFulfilled_events
-        if b.offerer == account or b.recipient == account
+        if (b.offerer == account or b.recipient == account)
+        and b.consideration_length > 0
+        # one event in 0xb93ee1dfc1f448e28188a447cbfcbe23886b0f32cf5fa6f20a7a69c20a10e782 is strange
     ])
 
 
