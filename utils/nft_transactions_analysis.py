@@ -54,7 +54,8 @@ def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
             how='left',
             on='nft_address')
 
-        assert df['nft_name'].notnull().all(), 'not all names are assigned'
+        assert ((df['nft_name'].notnull()) |
+                (df['eth'] < 0)).all(), 'not all names are assigned'
 
         df['time'] = datetime.datetime.fromtimestamp(
             int(transfers['timeStamp'].iloc[0])).strftime('%Y-%m-%d %H:%M:%S')
