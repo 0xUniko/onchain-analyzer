@@ -92,10 +92,9 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
     balances = pd.DataFrame([
         get_x2y2_tx_balance(
             b, find_the_corresponding_profit_event(b.detail['itemHash']),
-            account) for b in ev_inventory_events
-        if any((transfers['contractAddress'] == b.item['data']['token'])
-               & (transfers['tokenID'].astype(int) == b.item['data']
-                  ['identifier']))
+            account) for b in ev_inventory_events if
+        any((transfers['contractAddress'] == b.item['data']['token'])
+            & (transfers['tokenID'].map(int) == b.item['data']['identifier']))
     ])
 
     return add_nftname_time_hash(balances, transfers)
