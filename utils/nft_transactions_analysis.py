@@ -33,17 +33,13 @@ def get_OrderFulfilled_balance(account: HexAddress, receipt: TxReceipt):
     ])
 
 
-def match_nft(nft_address: HexAddress, tokenId: int,
-              transfers: pd.DataFrame) -> bool:
-    return any((transfers['contractAddress'] == nft_address.lower())
-               & (transfers['tokenID'] == tokenId))
-
-
-def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
+def add_nftname_time_hash_and_merge(df: pd.DataFrame, transfers: pd.DataFrame):
     if df.empty:
         return df
     else:
         df['nft_address'] = df['nft_address'].map(lambda x: x.lower())
+
+        df = df.groupby('nft_address').sum().reset_index()
 
         df = pd.merge(
             df,
@@ -52,7 +48,7 @@ def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
                 'tokenName': 'nft_name'
             })[['nft_address', 'nft_name']],
             how='left',
-            on='nft_address')
+            on='nft_address').drop_duplicates()
 
         assert ((df['nft_name'].notnull()) |
                 (df['eth'] < 0)).all(), 'not all names are assigned'
@@ -62,7 +58,7 @@ def add_nftname_time_hash(df: pd.DataFrame, transfers: pd.DataFrame):
 
         df['tx_hash'] = transfers['hash'].iloc[0]
 
-        return df
+        return df[['eth', 'nft_amount', 'nft_name', 'time', 'tx_hash']]
 
 
 def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
@@ -92,15 +88,13 @@ def get_EvInventory_balance(account: HexAddress, receipt: TxReceipt,
 
         return corresponding_profit_events[0]
 
-    balances = pd.DataFrame([
+    return pd.DataFrame([
         get_x2y2_tx_balance(
             b, find_the_corresponding_profit_event(b.detail['itemHash']),
             account) for b in ev_inventory_events if
         any((transfers['contractAddress'] == b.item['data']['token'])
             & (transfers['tokenID'].map(int) == b.item['data']['identifier']))
     ])
-
-    return add_nftname_time_hash(balances, transfers)
 
 
 def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
@@ -145,7 +139,7 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
         taker: List[TakerEvent] = [t['args'] for t in taker_ask]
         taker_type = TakerType.taker_ask
 
-    balances = pd.DataFrame([
+    return pd.DataFrame([
         get_taker_balance(
             account, t,
             find_the_corresponding_royalty_payment(t['collection'],
@@ -154,8 +148,6 @@ def get_TakerBid_TakerAsk_balance(account: HexAddress, receipt: TxReceipt,
         if any((transfers['contractAddress'] == t['collection'].lower())
                & (transfers['tokenID'].astype(int) == t['tokenId']))
     ])
-
-    return add_nftname_time_hash(balances, transfers)
 
 
 @retry(stop=stop_after_attempt(3),
@@ -187,23 +179,26 @@ def account_nft_transactions(account: HexAddress | Address,
             for hash in tqdm(
                     nft_transfers_in_30days['hash'].drop_duplicates()):
 
-                print(hash)
-
                 receipt = w3.eth.get_transaction_receipt(hash)
 
                 transfers = nft_transfers_in_30days.loc[
                     nft_transfers_in_30days['hash'] == hash]
 
-                balances.append(
-                    add_nftname_time_hash(
-                        get_OrderFulfilled_balance(account, receipt),
-                        transfers))
+                new_balances = []
 
-                balances.append(
+                new_balances.append(
+                    get_OrderFulfilled_balance(account, receipt))
+
+                new_balances.append(
                     get_EvInventory_balance(account, receipt, transfers))
 
-                balances.append(
+                new_balances.append(
                     get_TakerBid_TakerAsk_balance(account, receipt, transfers))
+
+                balances.extend([
+                    add_nftname_time_hash_and_merge(b, transfers)
+                    for b in new_balances
+                ])
 
         result = pd.concat(balances, ignore_index=True)
         break
