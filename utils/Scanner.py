@@ -1,12 +1,11 @@
-from typing import List, Tuple
-import httpx, datetime, time, os, json
+from typing import Tuple
+import httpx, datetime, time
 from dotenv import dotenv_values
 from web3 import Web3, HTTPProvider
 from web3.middleware.geth_poa import geth_poa_middleware
 from tenacity import retry
 from tenacity.wait import wait_random
 from tenacity.stop import stop_after_attempt
-import pandas as pd
 
 api_key = dotenv_values()["API_KEY"]
 if api_key is None:
