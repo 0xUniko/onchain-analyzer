@@ -11,12 +11,15 @@ import pandas as pd
 api_key = dotenv_values()["API_KEY"]
 if api_key is None:
     raise ValueError("API_KEY is required")
-api = "https://api.etherscan.io/api"
+# api = "https://api.etherscan.io/api"
 # api = 'https://api.bscscan.com/api'
 # api = 'https://api-test.bscscan.com/api'
 # endpoint = dotenv_values()['ANKR_BSC_ENDPOINT']
-endpoint = dotenv_values()["ALCHEMY_ETH_API"]
+# endpoint = dotenv_values()["ALCHEMY_ETH_API"]
 # endpoint = 'https://rpc.ankr.com/eth'
+endpoint = dotenv_values()["ENDPOINT"]
+assert endpoint is not None, "endpoint not config"
+api = endpoint + "api"
 proxy = "http://127.0.0.1:10809"
 
 w3 = Web3(HTTPProvider(endpoint))
