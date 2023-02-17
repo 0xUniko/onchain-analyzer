@@ -19,9 +19,11 @@ if api_key is None:
 endpoint = dotenv_values()["ENDPOINT"]
 assert endpoint is not None, "endpoint not config"
 api = endpoint + "api"
+rpc = dotenv_values()["RPC"]
+assert rpc is not None, "rpc not set"
 proxy = "http://127.0.0.1:10809"
 
-w3 = Web3(HTTPProvider(endpoint))
+w3 = Web3(HTTPProvider(rpc))
 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
