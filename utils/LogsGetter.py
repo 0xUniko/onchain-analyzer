@@ -80,7 +80,7 @@ class LogsGetter:
         return logs
 
     def get_logs(
-        self, name: str, address: HexAddress, date: datetime.date, **topics_param
+        self, name: str, address: str, date: datetime.date, **topics_param
     ) -> pd.DataFrame:
         dirname = os.path.join("utils", name)
 
@@ -135,7 +135,7 @@ class LogsGetter:
         return logs
 
     def get_all_logs(
-        self, name: str, address: HexAddress, start_date: datetime.date, **topics_param
+        self, name: str, address: str, start_date: datetime.date, **topics_param
     ) -> pd.DataFrame:
         date = start_date
         today = datetime.date.today()
@@ -150,7 +150,7 @@ class LogsGetter:
 
     def get_token_logs(
         self,
-        token_addr: ChecksumAddress,
+        token_addr: str,
         token_name: Optional[str] = None,
     ) -> pd.DataFrame:
         start_timestamp_hex = self.scanner.scan("logs", "getLogs", address=token_addr)[
