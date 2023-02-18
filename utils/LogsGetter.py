@@ -82,12 +82,12 @@ class LogsGetter:
     def get_logs(
         self, name: str, address: str, date: datetime.date, **topics_param
     ) -> pd.DataFrame:
-        dirname = os.path.join("utils", name)
+        dirname = os.path.join("utils", "cache", name)
 
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        filename = os.path.join("utils", name, f"{str(date)}.csv")
+        filename = os.path.join("utils", "cache", name, f"{str(date)}.csv")
 
         if os.path.exists(filename):
             logs = pd.read_csv(filename, index_col=0)

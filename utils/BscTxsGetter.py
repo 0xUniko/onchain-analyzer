@@ -56,7 +56,7 @@ class BscTxsGetter:
         """
         get all transactions of a date
         """
-        dirname = os.path.join("utils", "storage", name)
+        dirname = os.path.join("utils", "cache", name)
 
         if not os.path.exists(dirname):
             os.mkdir(dirname)
