@@ -1,3 +1,4 @@
+from typing import Literal
 from ..Scanner import w3, Scanner
 import json
 
@@ -48,6 +49,30 @@ def hex_to_topic_name(topic: str):
         return "deposit"
     if topic == withdrawal_topic:
         return "withdrawal"
+
+
+def topic_name_to_hex(
+    topic_name: Literal[
+        "mint", "burn", "swap", "sync", "approve", "transfer", "deposit", "withdrawal"
+    ]
+) -> str:
+    match topic_name:
+        case "mint":
+            return mint_topic
+        case "burn":
+            return burn_topic
+        case "swap":
+            return swap_topic
+        case "sync":
+            return sync_topic
+        case "approve":
+            return approval_topic
+        case "transfer":
+            return transfer_topic
+        case "deposit":
+            return deposit_topic
+        case "withdrawal":
+            return withdrawal_topic
 
 
 def decode_transfer_event(topic1, topic2, data, normalize=0):
@@ -106,7 +131,7 @@ def decode_pairCreated_logs(logs):
 
 with Scanner(proxies="http://127.0.0.1:10809") as scanner:
     router_abi = scanner.scan("contract", "getabi", address=pancake_router_address)
-pancake_router_contract = w3.eth.contract(
-    address=w3.toChecksumAddress(pancake_router_address), abi=router_abi
-)
+# pancake_router_contract = w3.eth.contract(
+#     address=w3.toChecksumAddress(pancake_router_address), abi=router_abi
+# )
 router_abi = json.loads(router_abi)
